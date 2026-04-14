@@ -1,0 +1,1433 @@
+[
+    {
+        "classes": [
+            {
+                "className": "AbstractContentsItem",
+                "lineNumber": 10,
+                "object": true,
+                "properties": [
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 0,
+                        "name": "index_num",
+                        "notify": "index_numChanged",
+                        "read": "index_num",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "int",
+                        "user": false,
+                        "write": "setIndex_num"
+                    },
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 1,
+                        "name": "title",
+                        "notify": "titleChanged",
+                        "read": "title",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "QString",
+                        "user": false,
+                        "write": "setTitle"
+                    },
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 2,
+                        "name": "author",
+                        "notify": "authorChanged",
+                        "read": "author",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "QString",
+                        "user": false,
+                        "write": "setAuthor"
+                    },
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 3,
+                        "name": "content",
+                        "notify": "contentChanged",
+                        "read": "content",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "QString",
+                        "user": false,
+                        "write": "setContent"
+                    },
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 4,
+                        "name": "time",
+                        "notify": "timeChanged",
+                        "read": "time",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "QDateTime",
+                        "user": false,
+                        "write": "setTime"
+                    },
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 5,
+                        "name": "outline",
+                        "notify": "outlineChanged",
+                        "read": "outline",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "QString",
+                        "user": false,
+                        "write": "setOutline"
+                    },
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 6,
+                        "name": "createdAt",
+                        "notify": "createdAtChanged",
+                        "read": "createdAt",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "QString",
+                        "user": false,
+                        "write": "setCreatedAt"
+                    },
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 7,
+                        "name": "startDate",
+                        "notify": "startDateChanged",
+                        "read": "startDate",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "QString",
+                        "user": false,
+                        "write": "setStartDate"
+                    },
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 8,
+                        "name": "dueDate",
+                        "notify": "dueDateChanged",
+                        "read": "dueDate",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "QString",
+                        "user": false,
+                        "write": "setDueDate"
+                    },
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 9,
+                        "name": "priority",
+                        "notify": "priorityChanged",
+                        "read": "priority",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "int",
+                        "user": false,
+                        "write": "setPriority"
+                    },
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 10,
+                        "name": "categoryId",
+                        "notify": "categoryIdChanged",
+                        "read": "categoryId",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "int",
+                        "user": false,
+                        "write": "setCategoryId"
+                    },
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 11,
+                        "name": "categoryName",
+                        "notify": "categoryNameChanged",
+                        "read": "categoryName",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "QString",
+                        "user": false,
+                        "write": "setCategoryName"
+                    },
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 12,
+                        "name": "categoryColor",
+                        "notify": "categoryColorChanged",
+                        "read": "categoryColor",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "QString",
+                        "user": false,
+                        "write": "setCategoryColor"
+                    },
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 13,
+                        "name": "completed",
+                        "notify": "completedChanged",
+                        "read": "completed",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "bool",
+                        "user": false,
+                        "write": "setCompleted"
+                    }
+                ],
+                "qualifiedClassName": "AbstractContentsItem",
+                "signals": [
+                    {
+                        "access": "public",
+                        "index": 0,
+                        "name": "index_numChanged",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "index": 1,
+                        "name": "titleChanged",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "index": 2,
+                        "name": "authorChanged",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "index": 3,
+                        "name": "contentChanged",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "index": 4,
+                        "name": "timeChanged",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "index": 5,
+                        "name": "outlineChanged",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "index": 6,
+                        "name": "createdAtChanged",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "index": 7,
+                        "name": "startDateChanged",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "index": 8,
+                        "name": "dueDateChanged",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "index": 9,
+                        "name": "priorityChanged",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "index": 10,
+                        "name": "categoryIdChanged",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "index": 11,
+                        "name": "categoryNameChanged",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "index": 12,
+                        "name": "categoryColorChanged",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "index": 13,
+                        "name": "completedChanged",
+                        "returnType": "void"
+                    }
+                ],
+                "superClasses": [
+                    {
+                        "access": "public",
+                        "name": "QObject"
+                    }
+                ]
+            }
+        ],
+        "inputFile": "abstractContentsItem.h",
+        "outputRevision": 68
+    },
+    {
+        "classes": [
+            {
+                "className": "AbstractContentsModel",
+                "lineNumber": 12,
+                "methods": [
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "dbPath",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "todayOnly",
+                                "type": "bool"
+                            },
+                            {
+                                "name": "completedOnly",
+                                "type": "bool"
+                            }
+                        ],
+                        "index": 0,
+                        "name": "loadAllFromDatabase",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "dbPath",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "todayOnly",
+                                "type": "bool"
+                            }
+                        ],
+                        "index": 1,
+                        "isCloned": true,
+                        "name": "loadAllFromDatabase",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "dbPath",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 2,
+                        "isCloned": true,
+                        "name": "loadAllFromDatabase",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "row",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 3,
+                        "name": "get",
+                        "returnType": "QVariantMap"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "row",
+                                "type": "int"
+                            },
+                            {
+                                "name": "newOutline",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "dbPath",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 4,
+                        "name": "updateOutline",
+                        "returnType": "void"
+                    }
+                ],
+                "object": true,
+                "qualifiedClassName": "AbstractContentsModel",
+                "superClasses": [
+                    {
+                        "access": "public",
+                        "name": "QAbstractListModel"
+                    }
+                ]
+            }
+        ],
+        "inputFile": "abstractcontentsmodel.h",
+        "outputRevision": 68
+    },
+    {
+        "classes": [
+            {
+                "className": "AuthManager",
+                "lineNumber": 14,
+                "methods": [
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "email",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 4,
+                        "name": "requestVerificationCode",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "email",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "code",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 5,
+                        "name": "loginWithCode",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "index": 6,
+                        "name": "logout",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "nickname",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 7,
+                        "name": "updateNickname",
+                        "returnType": "void"
+                    }
+                ],
+                "object": true,
+                "properties": [
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 0,
+                        "name": "isLoggedIn",
+                        "notify": "loginStateChanged",
+                        "read": "isLoggedIn",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "bool",
+                        "user": false
+                    },
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 1,
+                        "name": "currentUserId",
+                        "notify": "loginStateChanged",
+                        "read": "currentUserId",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "int",
+                        "user": false
+                    },
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 2,
+                        "name": "currentUserEmail",
+                        "notify": "loginStateChanged",
+                        "read": "currentUserEmail",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "QString",
+                        "user": false
+                    },
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 3,
+                        "name": "currentUserNickname",
+                        "notify": "loginStateChanged",
+                        "read": "currentUserNickname",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "QString",
+                        "user": false
+                    }
+                ],
+                "qualifiedClassName": "AuthManager",
+                "signals": [
+                    {
+                        "access": "public",
+                        "index": 0,
+                        "name": "loginStateChanged",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "success",
+                                "type": "bool"
+                            },
+                            {
+                                "name": "message",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 1,
+                        "name": "verificationCodeSent",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "success",
+                                "type": "bool"
+                            },
+                            {
+                                "name": "message",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 2,
+                        "name": "loginResult",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "error",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 3,
+                        "name": "errorOccurred",
+                        "returnType": "void"
+                    }
+                ],
+                "superClasses": [
+                    {
+                        "access": "public",
+                        "name": "QObject"
+                    }
+                ]
+            }
+        ],
+        "inputFile": "authmanager.h",
+        "outputRevision": 68
+    },
+    {
+        "classes": [
+            {
+                "className": "DatabaseManager",
+                "lineNumber": 11,
+                "methods": [
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "dbPath",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 2,
+                        "name": "initialize",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "email",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "nickname",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 3,
+                        "name": "createUser",
+                        "returnType": "int"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "email",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 4,
+                        "isCloned": true,
+                        "name": "createUser",
+                        "returnType": "int"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "email",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 5,
+                        "name": "findUserByEmail",
+                        "returnType": "int"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "userId",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 6,
+                        "name": "getUserInfo",
+                        "returnType": "QVariantMap"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "userId",
+                                "type": "int"
+                            },
+                            {
+                                "name": "nickname",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "avatar",
+                                "type": "QByteArray"
+                            }
+                        ],
+                        "index": 7,
+                        "name": "updateUserInfo",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "userId",
+                                "type": "int"
+                            },
+                            {
+                                "name": "nickname",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 8,
+                        "isCloned": true,
+                        "name": "updateUserInfo",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "index": 9,
+                        "name": "defaultUserSettings",
+                        "returnType": "QVariantMap"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "userId",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 10,
+                        "name": "getUserSettings",
+                        "returnType": "QVariantMap"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "userId",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 11,
+                        "name": "ensureUserSettingsRow",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "userId",
+                                "type": "int"
+                            },
+                            {
+                                "name": "settings",
+                                "type": "QVariantMap"
+                            }
+                        ],
+                        "index": 12,
+                        "name": "saveUserSettings",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "userId",
+                                "type": "int"
+                            },
+                            {
+                                "name": "title",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "description",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "content",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "startDate",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "endDate",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "priority",
+                                "type": "int"
+                            },
+                            {
+                                "name": "categoryId",
+                                "type": "int"
+                            },
+                            {
+                                "name": "completed",
+                                "type": "bool"
+                            }
+                        ],
+                        "index": 13,
+                        "name": "createTask",
+                        "returnType": "int"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "userId",
+                                "type": "int"
+                            },
+                            {
+                                "name": "title",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "description",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "content",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "startDate",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "endDate",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "priority",
+                                "type": "int"
+                            },
+                            {
+                                "name": "categoryId",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 14,
+                        "isCloned": true,
+                        "name": "createTask",
+                        "returnType": "int"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "userId",
+                                "type": "int"
+                            },
+                            {
+                                "name": "title",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "description",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "content",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "startDate",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "endDate",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "priority",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 15,
+                        "isCloned": true,
+                        "name": "createTask",
+                        "returnType": "int"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "userId",
+                                "type": "int"
+                            },
+                            {
+                                "name": "title",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "description",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "content",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "startDate",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "endDate",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 16,
+                        "isCloned": true,
+                        "name": "createTask",
+                        "returnType": "int"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "taskId",
+                                "type": "int"
+                            },
+                            {
+                                "name": "data",
+                                "type": "QVariantMap"
+                            }
+                        ],
+                        "index": 17,
+                        "name": "updateTask",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "taskId",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 18,
+                        "name": "markTaskForToday",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "taskId",
+                                "type": "int"
+                            },
+                            {
+                                "name": "progress",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 19,
+                        "name": "updateTaskProgress",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "taskId",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 20,
+                        "name": "deleteTask",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "userId",
+                                "type": "int"
+                            },
+                            {
+                                "name": "startDate",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "endDate",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 21,
+                        "name": "getTasksByUser",
+                        "returnType": "QVariantList"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "userId",
+                                "type": "int"
+                            },
+                            {
+                                "name": "startDate",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 22,
+                        "isCloned": true,
+                        "name": "getTasksByUser",
+                        "returnType": "QVariantList"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "userId",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 23,
+                        "isCloned": true,
+                        "name": "getTasksByUser",
+                        "returnType": "QVariantList"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "userId",
+                                "type": "int"
+                            },
+                            {
+                                "name": "startDate",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "endDate",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 24,
+                        "name": "getTasksByDateRange",
+                        "returnType": "QVariantList"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "userId",
+                                "type": "int"
+                            },
+                            {
+                                "name": "name",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "color",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "icon",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 25,
+                        "name": "createCategory",
+                        "returnType": "int"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "userId",
+                                "type": "int"
+                            },
+                            {
+                                "name": "name",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "color",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 26,
+                        "isCloned": true,
+                        "name": "createCategory",
+                        "returnType": "int"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "userId",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 27,
+                        "name": "getCategoriesByUser",
+                        "returnType": "QVariantList"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "categoryId",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 28,
+                        "name": "deleteCategory",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "email",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "code",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 29,
+                        "name": "saveVerificationCode",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "email",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "cooldownSeconds",
+                                "type": "int"
+                            },
+                            {
+                                "name": "remainingSeconds",
+                                "type": "int*"
+                            }
+                        ],
+                        "index": 30,
+                        "name": "canRequestVerificationCode",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "email",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "cooldownSeconds",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 31,
+                        "isCloned": true,
+                        "name": "canRequestVerificationCode",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "email",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 32,
+                        "isCloned": true,
+                        "name": "canRequestVerificationCode",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "email",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "code",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 33,
+                        "name": "verifyCode",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "index": 34,
+                        "name": "cleanExpiredCodes",
+                        "returnType": "void"
+                    }
+                ],
+                "object": true,
+                "properties": [
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 0,
+                        "name": "isOpen",
+                        "notify": "isOpenChanged",
+                        "read": "isOpen",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "bool",
+                        "user": false
+                    }
+                ],
+                "qualifiedClassName": "DatabaseManager",
+                "signals": [
+                    {
+                        "access": "public",
+                        "index": 0,
+                        "name": "isOpenChanged",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "error",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 1,
+                        "name": "errorOccurred",
+                        "returnType": "void"
+                    }
+                ],
+                "superClasses": [
+                    {
+                        "access": "public",
+                        "name": "QObject"
+                    }
+                ]
+            }
+        ],
+        "inputFile": "databasemanager.h",
+        "outputRevision": 68
+    },
+    {
+        "classes": [
+            {
+                "className": "GanttModel",
+                "lineNumber": 12,
+                "methods": [
+                    {
+                        "access": "public",
+                        "index": 3,
+                        "name": "loadTasks",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "start",
+                                "type": "QDate"
+                            },
+                            {
+                                "name": "end",
+                                "type": "QDate"
+                            }
+                        ],
+                        "index": 4,
+                        "name": "setDateRange",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "index": 5,
+                        "name": "moveToPreviousWeek",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "index": 6,
+                        "name": "moveToNextWeek",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "index": 7,
+                        "name": "moveToToday",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "taskId",
+                                "type": "int"
+                            },
+                            {
+                                "name": "startDate",
+                                "type": "QDate"
+                            },
+                            {
+                                "name": "endDate",
+                                "type": "QDate"
+                            }
+                        ],
+                        "index": 8,
+                        "name": "updateTaskDates",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "taskId",
+                                "type": "int"
+                            },
+                            {
+                                "name": "progress",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 9,
+                        "name": "updateTaskProgress",
+                        "returnType": "bool"
+                    }
+                ],
+                "object": true,
+                "properties": [
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 0,
+                        "name": "viewStartDate",
+                        "notify": "viewDateChanged",
+                        "read": "viewStartDate",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "QDate",
+                        "user": false,
+                        "write": "setViewStartDate"
+                    },
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 1,
+                        "name": "viewEndDate",
+                        "notify": "viewDateChanged",
+                        "read": "viewEndDate",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "QDate",
+                        "user": false,
+                        "write": "setViewEndDate"
+                    },
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 2,
+                        "name": "userId",
+                        "notify": "userIdChanged",
+                        "read": "userId",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "int",
+                        "user": false,
+                        "write": "setUserId"
+                    },
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 3,
+                        "name": "totalDays",
+                        "notify": "viewDateChanged",
+                        "read": "totalDays",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "int",
+                        "user": false
+                    }
+                ],
+                "qualifiedClassName": "GanttModel",
+                "signals": [
+                    {
+                        "access": "public",
+                        "index": 0,
+                        "name": "viewDateChanged",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "index": 1,
+                        "name": "userIdChanged",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "count",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 2,
+                        "name": "tasksLoaded",
+                        "returnType": "void"
+                    }
+                ],
+                "superClasses": [
+                    {
+                        "access": "public",
+                        "name": "QAbstractListModel"
+                    }
+                ]
+            },
+            {
+                "className": "GanttTaskItem",
+                "lineNumber": 81,
+                "object": true,
+                "qualifiedClassName": "GanttTaskItem",
+                "superClasses": [
+                    {
+                        "access": "public",
+                        "name": "QObject"
+                    }
+                ]
+            }
+        ],
+        "inputFile": "ganttmodel.h",
+        "outputRevision": 68
+    }
+]

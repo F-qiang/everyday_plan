@@ -1,0 +1,196 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Debug-99c7b025c3b0d81ebaf3.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "everyday_day",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "all_aotstats::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-all_aotstats-Debug-07dddc9e41541c9b3365.json",
+					"name" : "all_aotstats",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "all_qmllint::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-all_qmllint-Debug-3802e1d0dfbcd7e7251e.json",
+					"name" : "all_qmllint",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "all_qmllint_json::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-all_qmllint_json-Debug-aa331d4c467264a1b0c0.json",
+					"name" : "all_qmllint_json",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "all_qmllint_module::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-all_qmllint_module-Debug-c0ea182bb791c6e4eb54.json",
+					"name" : "all_qmllint_module",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "all_qmltyperegistrations::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-all_qmltyperegistrations-Debug-5e9df4302a3bb2711601.json",
+					"name" : "all_qmltyperegistrations",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appeveryday_day::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appeveryday_day-Debug-b0ed3e0542f77fda2aef.json",
+					"name" : "appeveryday_day",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appeveryday_day_autogen::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appeveryday_day_autogen-Debug-ab7028b746aa76b3c15a.json",
+					"name" : "appeveryday_day_autogen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appeveryday_day_autogen_timestamp_deps::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appeveryday_day_autogen_timestamp_deps-Debug-b471281b3771f6fac3f6.json",
+					"name" : "appeveryday_day_autogen_timestamp_deps",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appeveryday_day_copy_qml::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appeveryday_day_copy_qml-Debug-5e055a83f828b9d5b6ca.json",
+					"name" : "appeveryday_day_copy_qml",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appeveryday_day_copy_res::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appeveryday_day_copy_res-Debug-d14d69f5b3dc98c9cc17.json",
+					"name" : "appeveryday_day_copy_res",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appeveryday_day_qmlimportscan::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appeveryday_day_qmlimportscan-Debug-7e0314a51a1f27662578.json",
+					"name" : "appeveryday_day_qmlimportscan",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appeveryday_day_qmllint::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appeveryday_day_qmllint-Debug-86fea36eaae6d6a7c91a.json",
+					"name" : "appeveryday_day_qmllint",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appeveryday_day_qmllint_json::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appeveryday_day_qmllint_json-Debug-37f2abb318f9e13319ef.json",
+					"name" : "appeveryday_day_qmllint_json",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appeveryday_day_qmllint_module::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appeveryday_day_qmllint_module-Debug-1f0e0a86926b2b3570a3.json",
+					"name" : "appeveryday_day_qmllint_module",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "appeveryday_day_qmltyperegistration::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-appeveryday_day_qmltyperegistration-Debug-05db0cb8c0cbfd76fa3f.json",
+					"name" : "appeveryday_day_qmltyperegistration",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "module_appeveryday_day_aotstats_target::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-module_appeveryday_day_aotstats_target-Debug-29e558c0216b6939eabf.json",
+					"name" : "module_appeveryday_day_aotstats_target",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "D:/Data/Code/cpp/todo-project-enhanced/everyday_day/build/Desktop_Qt_6_8_3_llvm_mingw_64_bit-Debug",
+		"source" : "D:/Data/Code/cpp/todo-project-enhanced/everyday_day"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 7
+	}
+}

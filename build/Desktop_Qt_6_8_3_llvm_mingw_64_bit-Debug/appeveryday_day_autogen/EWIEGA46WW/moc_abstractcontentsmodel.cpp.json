@@ -1,0 +1,102 @@
+{
+    "classes": [
+        {
+            "className": "AbstractContentsModel",
+            "lineNumber": 12,
+            "methods": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "dbPath",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "todayOnly",
+                            "type": "bool"
+                        },
+                        {
+                            "name": "completedOnly",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 0,
+                    "name": "loadAllFromDatabase",
+                    "returnType": "bool"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "dbPath",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "todayOnly",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 1,
+                    "isCloned": true,
+                    "name": "loadAllFromDatabase",
+                    "returnType": "bool"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "dbPath",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 2,
+                    "isCloned": true,
+                    "name": "loadAllFromDatabase",
+                    "returnType": "bool"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "row",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 3,
+                    "name": "get",
+                    "returnType": "QVariantMap"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "row",
+                            "type": "int"
+                        },
+                        {
+                            "name": "newOutline",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "dbPath",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "updateOutline",
+                    "returnType": "void"
+                }
+            ],
+            "object": true,
+            "qualifiedClassName": "AbstractContentsModel",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QAbstractListModel"
+                }
+            ]
+        }
+    ],
+    "inputFile": "abstractcontentsmodel.h",
+    "outputRevision": 68
+}

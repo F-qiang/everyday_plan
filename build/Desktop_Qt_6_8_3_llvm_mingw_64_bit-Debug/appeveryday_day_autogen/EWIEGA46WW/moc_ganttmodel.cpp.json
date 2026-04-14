@@ -1,0 +1,195 @@
+{
+    "classes": [
+        {
+            "className": "GanttModel",
+            "lineNumber": 12,
+            "methods": [
+                {
+                    "access": "public",
+                    "index": 3,
+                    "name": "loadTasks",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "start",
+                            "type": "QDate"
+                        },
+                        {
+                            "name": "end",
+                            "type": "QDate"
+                        }
+                    ],
+                    "index": 4,
+                    "name": "setDateRange",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 5,
+                    "name": "moveToPreviousWeek",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 6,
+                    "name": "moveToNextWeek",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 7,
+                    "name": "moveToToday",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "taskId",
+                            "type": "int"
+                        },
+                        {
+                            "name": "startDate",
+                            "type": "QDate"
+                        },
+                        {
+                            "name": "endDate",
+                            "type": "QDate"
+                        }
+                    ],
+                    "index": 8,
+                    "name": "updateTaskDates",
+                    "returnType": "bool"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "taskId",
+                            "type": "int"
+                        },
+                        {
+                            "name": "progress",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 9,
+                    "name": "updateTaskProgress",
+                    "returnType": "bool"
+                }
+            ],
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "name": "viewStartDate",
+                    "notify": "viewDateChanged",
+                    "read": "viewStartDate",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QDate",
+                    "user": false,
+                    "write": "setViewStartDate"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "name": "viewEndDate",
+                    "notify": "viewDateChanged",
+                    "read": "viewEndDate",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QDate",
+                    "user": false,
+                    "write": "setViewEndDate"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "name": "userId",
+                    "notify": "userIdChanged",
+                    "read": "userId",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false,
+                    "write": "setUserId"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "name": "totalDays",
+                    "notify": "viewDateChanged",
+                    "read": "totalDays",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false
+                }
+            ],
+            "qualifiedClassName": "GanttModel",
+            "signals": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "name": "viewDateChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 1,
+                    "name": "userIdChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "count",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 2,
+                    "name": "tasksLoaded",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QAbstractListModel"
+                }
+            ]
+        },
+        {
+            "className": "GanttTaskItem",
+            "lineNumber": 81,
+            "object": true,
+            "qualifiedClassName": "GanttTaskItem",
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QObject"
+                }
+            ]
+        }
+    ],
+    "inputFile": "ganttmodel.h",
+    "outputRevision": 68
+}

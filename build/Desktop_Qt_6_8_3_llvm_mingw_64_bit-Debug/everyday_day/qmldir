@@ -1,0 +1,15 @@
+module everyday_day
+typeinfo appeveryday_day.qmltypes
+prefer :/qt/qml/everyday_day/
+Main 1.0 Main.qml
+AbstractContents 1.0 AbstractContents.qml
+ContensElement 1.0 ContensElement.qml
+LoginWindow 1.0 LoginWindow.qml
+GanttChart 1.0 GanttChart.qml
+GanttHeader 1.0 GanttHeader.qml
+GanttTaskBar 1.0 GanttTaskBar.qml
+SettingsPanel 1.0 SettingsPanel.qml
+NewTaskDialog 1.0 NewTaskDialog.qml
+NewCategoryDialog 1.0 NewCategoryDialog.qml
+CategoryListPanel 1.0 CategoryListPanel.qml
+
