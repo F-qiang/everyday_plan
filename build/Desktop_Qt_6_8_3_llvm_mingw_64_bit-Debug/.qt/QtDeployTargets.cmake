@@ -1,3 +1,0 @@
-set(__QT_DEPLOY_TARGET_appeveryday_day_FILE D:/Data/Code/cpp/todo-project-enhanced/everyday_day/build/Desktop_Qt_6_8_3_llvm_mingw_64_bit-Debug/appeveryday_day.exe)
-set(__QT_DEPLOY_TARGET_appeveryday_day_TYPE EXECUTABLE)
-set(__QT_DEPLOY_TARGET_appeveryday_day_RUNTIME_DLLS D:/App/QT/6.8.3/llvm-mingw_64/bin/Qt6Quick.dll;D:/App/QT/6.8.3/llvm-mingw_64/bin/Qt6Sql.dll;D:/App/QT/6.8.3/llvm-mingw_64/bin/Qt6QmlMeta.dll;D:/App/QT/6.8.3/llvm-mingw_64/bin/Qt6QmlWorkerScript.dll;D:/App/QT/6.8.3/llvm-mingw_64/bin/Qt6QmlModels.dll;D:/App/QT/6.8.3/llvm-mingw_64/bin/Qt6Qml.dll;D:/App/QT/6.8.3/llvm-mingw_64/bin/Qt6Network.dll;D:/App/QT/6.8.3/llvm-mingw_64/bin/Qt6OpenGL.dll;D:/App/QT/6.8.3/llvm-mingw_64/bin/Qt6Gui.dll;D:/App/QT/6.8.3/llvm-mingw_64/bin/Qt6Core.dll)
