@@ -23,6 +23,8 @@ ColumnLayout {
     property bool showDetailStartDate: true
     property bool showDetailDueDate: true
     property bool showDetailPriority: true
+    property bool showIdentitySection: true
+    property bool showScheduleSection: true
     property color detailTextColor: "#0f172a"
     property color detailMutedTextColor: "#475569"
     property color detailHintTextColor: "#64748b"
@@ -43,6 +45,9 @@ ColumnLayout {
     visible: visibleSection
     Layout.fillWidth: true
     spacing: 4
+
+    readonly property bool identityVisible: root.showIdentitySection && (root.showDetailAuthor || root.showDetailCreatedDate)
+    readonly property bool scheduleVisible: root.showScheduleSection && (root.showDetailStartDate || root.showDetailDueDate || root.showDetailPriority)
 
     TextField {
         visible: !root.visibleSection
@@ -67,12 +72,12 @@ ColumnLayout {
     }
 
     ColumnLayout {
-        visible: root.showDetailAuthor || root.showDetailCreatedDate || root.showDetailStartDate || root.showDetailDueDate
+        visible: root.identityVisible
         Layout.fillWidth: true
         spacing: 6
 
         RowLayout {
-            visible: root.showDetailAuthor || root.showDetailCreatedDate
+            visible: root.identityVisible
             Layout.fillWidth: true
             spacing: 6
 
@@ -140,6 +145,11 @@ ColumnLayout {
                 }
             }
         }
+
+    ColumnLayout {
+        visible: root.scheduleVisible
+        Layout.fillWidth: true
+        spacing: 6
 
         Rectangle {
             visible: root.showDetailStartDate
@@ -250,41 +260,42 @@ ColumnLayout {
                 }
             }
         }
-    }
 
-    Rectangle {
-        visible: root.showDetailPriority
-        Layout.fillWidth: true
-        implicitHeight: 58
-        radius: 12
-        color: root.detailElevatedColor
-        border.color: root.detailBorderColor
-        border.width: 1
+        Rectangle {
+            visible: root.showDetailPriority
+            Layout.fillWidth: true
+            implicitHeight: 58
+            radius: 12
+            color: root.detailElevatedColor
+            border.color: root.detailBorderColor
+            border.width: 1
 
-        RowLayout {
-            anchors.fill: parent
-            anchors.margins: 10
-            spacing: 8
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 10
+                spacing: 8
 
-            Label {
-                text: root.tFunc("优先级", "Priority")
-                color: root.detailHintTextColor
-                font.pixelSize: Math.max(12, root.detailFontSize - 7)
-                Layout.preferredWidth: 52
-                Layout.alignment: Qt.AlignVCenter
+                Label {
+                    text: root.tFunc("优先级", "Priority")
+                    color: root.detailHintTextColor
+                    font.pixelSize: Math.max(12, root.detailFontSize - 7)
+                    Layout.preferredWidth: 52
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                ComboBox {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    model: ["低", "中", "高", "紧急"]
+                    currentIndex: Math.max(0, root.editTaskPriority - 1)
+                    implicitWidth: 144
+                    onActivated: root.priorityEdited(currentIndex + 1)
+                }
+
+                Item { visible: false; Layout.fillWidth: true }
             }
-
-            ComboBox {
-                Layout.fillWidth: true
-                Layout.alignment: Qt.AlignVCenter
-                model: ["低", "中", "高", "紧急"]
-                currentIndex: Math.max(0, root.editTaskPriority - 1)
-                implicitWidth: 144
-                onActivated: root.priorityEdited(currentIndex + 1)
-            }
-
-            Item { visible: false; Layout.fillWidth: true }
         }
     }
 
+}
 }

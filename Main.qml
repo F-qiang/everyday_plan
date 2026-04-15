@@ -906,7 +906,7 @@ Window {
             Rectangle {
                 id: loginPulse
                 anchors.fill: parent
-                visible: loginPrompt
+                visible: accountTangle.loginPrompt
                 radius: 0
                 color: "#93c5fd"
                 opacity: 0.08
@@ -922,10 +922,10 @@ Window {
 
             Rectangle {
                 anchors.fill: parent
-                anchors.margins: loginPrompt ? 1 : 0
+                anchors.margins: accountTangle.loginPrompt ? 1 : 0
                 radius: 0
                 color: "transparent"
-                visible: loginPrompt
+                visible: accountTangle.loginPrompt
                 border.color: "transparent"
 
                 Rectangle {
@@ -1411,7 +1411,6 @@ Window {
                                 anchors.fill: parent
                                 anchors.margins: 6
                                 clip: true
-                                contentWidth: availableWidth
                                 contentHeight: detailScrollContent.implicitHeight
                                 ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
@@ -1504,6 +1503,8 @@ Window {
                                     editTaskPriority: mainWindow.editTaskPriority
                                     editTaskCategoryIndex: mainWindow.editTaskCategoryIndex
                                     categoryList: mainWindow.categoryList
+                                    showIdentitySection: true
+                                    showScheduleSection: false
                                     showDetailAuthor: mainWindow.showDetailAuthor
                                     showDetailCreatedDate: mainWindow.showDetailCreatedDate
                                     showDetailStartDate: mainWindow.showDetailStartDate
@@ -1520,11 +1521,11 @@ Window {
                                     tFunc: mainWindow.t
                                     formatDateTimeFunc: mainWindow.formatDisplayDateTime
                                     openDateTimeEditorFunc: mainWindow.openDateTimeEditor
-                                    onTitleEdited: mainWindow.editTaskTitle = value
-                                    onStartDateEdited: mainWindow.editTaskStartDate = value
-                                    onDueDateEdited: mainWindow.editTaskDueDate = value
-                                    onPriorityEdited: mainWindow.editTaskPriority = value
-                                    onCategoryIndexEdited: mainWindow.editTaskCategoryIndex = value
+                                    onTitleEdited: function(value) { mainWindow.editTaskTitle = value }
+                                    onStartDateEdited: function(value) { mainWindow.editTaskStartDate = value }
+                                    onDueDateEdited: function(value) { mainWindow.editTaskDueDate = value }
+                                    onPriorityEdited: function(value) { mainWindow.editTaskPriority = value }
+                                    onCategoryIndexEdited: function(value) { mainWindow.editTaskCategoryIndex = value }
                                 }
 
                                 DetailEditingSection {
@@ -1543,9 +1544,9 @@ Window {
                                     tFunc: mainWindow.t
                                     contentIsImageFunc: mainWindow.contentIsImage
                                     contentIsFileFunc: mainWindow.contentIsFile
-                                    onOutlineEdited: mainWindow.editTaskOutline = value
-                                    onContentEdited: mainWindow.editTaskContent = value
-                                    onCompletedEdited: mainWindow.editTaskCompleted = value
+                                    onOutlineEdited: function(value) { mainWindow.editTaskOutline = value }
+                                    onContentEdited: function(value) { mainWindow.editTaskContent = value }
+                                    onCompletedEdited: function(value) { mainWindow.editTaskCompleted = value }
                                 }
 
                                 Label {
@@ -1630,10 +1631,11 @@ Window {
 
                                             DetailCard {
                                                 id: detailAttachmentSummaryCard
+                                                property bool attachmentPressed: detailAttachmentTapHandler.pressed && editTaskContent.trim() === ""
                                                 width: parent.width
                                                 implicitHeight: editTaskContent.trim() === "" ? 72 : 52
                                                 radius: 12
-                                                color: editTaskContent.trim() === "" ? (detailAttachmentPressed
+                                                color: editTaskContent.trim() === "" ? (attachmentPressed
                                                          ? (homeDarkMode ? "#293443" : "#eef4fa")
                                                          : (detailAttachmentHoverArea.containsMouse
                                                             ? (homeDarkMode ? "#324050" : "#f2f7fc")
@@ -1651,8 +1653,6 @@ Window {
                                                     onTapped: detailAttachmentDialog.open()
                                                 }
 
-                                                property bool detailAttachmentPressed: detailAttachmentTapHandler.pressed && editTaskContent.trim() === ""
-
                                                 Behavior on color {
                                                     ColorAnimation { duration: 120 }
                                                 }
@@ -1662,7 +1662,7 @@ Window {
                                                     radius: 12
                                                     visible: editTaskContent.trim() === "" && detailAttachmentHoverArea.containsMouse
                                                     color: homeDarkMode ? "#9ec5ff" : "#2563eb"
-                                                    opacity: detailAttachmentPressed ? (homeDarkMode ? 0.03 : 0.022) : (homeDarkMode ? 0.045 : 0.032)
+                                                    opacity: attachmentPressed ? (homeDarkMode ? 0.03 : 0.022) : (homeDarkMode ? 0.045 : 0.032)
 
                                                     Behavior on opacity {
                                                         NumberAnimation { duration: 120 }
@@ -1674,7 +1674,7 @@ Window {
                                                     radius: 12
                                                     color: "transparent"
                                                     visible: editTaskContent.trim() === ""
-                                                    border.color: detailAttachmentPressed
+                                                    border.color: attachmentPressed
                                                                   ? (homeDarkMode ? "#73869a" : "#bfcedc")
                                                                   : (detailAttachmentHoverArea.containsMouse
                                                                      ? (homeDarkMode ? "#7a8ca0" : "#c8d6e2")
@@ -1692,23 +1692,25 @@ Window {
                                                     anchors.margins: 1
                                                     visible: editTaskContent.trim() === ""
 
+                                                    onVisibleChanged: if (visible) requestPaint()
                                                     Connections {
                                                         target: detailAttachmentHoverArea
-
-                                                        function onContainsMouseChanged() {
-                                                            parent.requestPaint()
+                                                        function onHoveredChanged() {
+                                                            if (parent.visible) {
+                                                                parent.requestPaint()
+                                                            }
                                                         }
                                                     }
 
                                                     onPaint: {
                                                         const ctx = getContext("2d")
                                                         ctx.reset()
-                                                        ctx.strokeStyle = detailAttachmentPressed
+                                                        ctx.strokeStyle = attachmentPressed
                                                                 ? (homeDarkMode ? "#8598ab" : "#c7d4df")
                                                                 : (detailAttachmentHoverArea.containsMouse
                                                                    ? (homeDarkMode ? "#7f91a5" : "#cedae5")
                                                                    : (homeDarkMode ? "#6b7c90" : "#d7e0ea"))
-                                                        ctx.globalAlpha = detailAttachmentPressed
+                                                        ctx.globalAlpha = attachmentPressed
                                                                 ? (homeDarkMode ? 0.58 : 0.84)
                                                                 : (detailAttachmentHoverArea.containsMouse
                                                                    ? (homeDarkMode ? 0.72 : 0.92)
@@ -1797,6 +1799,7 @@ Window {
                                                 }
                                             }
                                         }
+
 
                                         DetailCard {
                                             width: parent.width
@@ -1960,6 +1963,45 @@ Window {
                                                     font.pixelSize: Math.max(12, detailFontSize - 7)
                                                 }
                                             }
+                                        }
+
+                                        DetailMetaSection {
+                                            visibleSection: detailVisible
+                                            homeDarkMode: mainWindow.homeDarkMode
+                                            detailFontSize: mainWindow.detailFontSize
+                                            editTaskTitle: mainWindow.editTaskTitle
+                                            selectedTaskCategoryColor: mainWindow.selectedTaskCategoryColor
+                                            selectedTaskCategoryName: mainWindow.selectedTaskCategoryName
+                                            selectedTaskAuthor: mainWindow.selectedTaskAuthor
+                                            selectedTaskCreatedAt: mainWindow.selectedTaskCreatedAt
+                                            editTaskStartDate: mainWindow.editTaskStartDate
+                                            editTaskDueDate: mainWindow.editTaskDueDate
+                                            editTaskPriority: mainWindow.editTaskPriority
+                                            editTaskCategoryIndex: mainWindow.editTaskCategoryIndex
+                                            categoryList: mainWindow.categoryList
+                                            showIdentitySection: false
+                                            showScheduleSection: true
+                                            showDetailAuthor: mainWindow.showDetailAuthor
+                                            showDetailCreatedDate: mainWindow.showDetailCreatedDate
+                                            showDetailStartDate: mainWindow.showDetailStartDate
+                                            showDetailDueDate: mainWindow.showDetailDueDate
+                                            showDetailPriority: mainWindow.showDetailPriority
+                                            detailTextColor: mainWindow.detailTextColor
+                                            detailMutedTextColor: mainWindow.detailMutedTextColor
+                                            detailHintTextColor: mainWindow.detailHintTextColor
+                                            detailBorderColor: mainWindow.detailBorderColor
+                                            detailElevatedColor: mainWindow.detailElevatedColor
+                                            detailAccentColor: mainWindow.detailAccentColor
+                                            detailOnAccentColor: mainWindow.detailOnAccentColor
+                                            detailTonalColor: mainWindow.detailTonalColor
+                                            tFunc: mainWindow.t
+                                            formatDateTimeFunc: mainWindow.formatDisplayDateTime
+                                            openDateTimeEditorFunc: mainWindow.openDateTimeEditor
+                                            onTitleEdited: function(value) { mainWindow.editTaskTitle = value }
+                                            onStartDateEdited: function(value) { mainWindow.editTaskStartDate = value }
+                                            onDueDateEdited: function(value) { mainWindow.editTaskDueDate = value }
+                                            onPriorityEdited: function(value) { mainWindow.editTaskPriority = value }
+                                            onCategoryIndexEdited: function(value) { mainWindow.editTaskCategoryIndex = value }
                                         }
                                     }
                                 }

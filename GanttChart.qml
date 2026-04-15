@@ -20,7 +20,7 @@ Item {
     property bool blueTaskBarsEnabled: true
     property bool blueTodayColumnEnabled: true
     property bool blueGridLinesEnabled: true
-    readonly property color ganttBarThemeColor: "#60a5fa"
+    readonly property color toolbarBg: "#f8fbff"
     readonly property color toolbarBorder: "#dbe4f0"
     readonly property color toolbarText: "#1e293b"
     readonly property color toolbarButtonBg: "#e0f2fe"
@@ -29,6 +29,7 @@ Item {
     readonly property color toolbarButtonText: "#0f4c81"
     readonly property color toolbarButtonActiveBg: "#38bdf8"
     readonly property color toolbarButtonActiveText: "#ffffff"
+    readonly property color ganttBarThemeColor: "#38bdf8"
 
     signal taskClicked(int taskId)
     signal taskDatesChanged(int taskId, string startDate, string endDate)
@@ -218,7 +219,7 @@ Item {
                                 title: model.title
                                 categoryName: model.categoryName
                                 description: model.description
-                                barColor: ganttChart.blueTaskBarsEnabled ? ganttChart.ganttBarThemeColor : (model.categoryColor || model.color)
+                                barColor: ganttChart.blueTaskBarsEnabled ? ganttChart.ganttBarThemeColor : (model.categoryColor ? model.categoryColor : (model.color ? model.color : "#94a3b8"))
                                 progress: model.progress
                                 startOffset: model.startOffset
                                 duration: model.duration

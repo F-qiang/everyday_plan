@@ -59,14 +59,14 @@ Item {
                                              ? (mainWindow.homeDarkMode ? "#dbeafe" : "#1d4ed8")
                                              : "#1d4ed8"
     readonly property color statusBackground: completed
-                                              ? (mainWindow.homeDarkMode ? "#163826" : "#ecfdf5")
-                                              : (mainWindow.homeDarkMode ? "#3f1d24" : "#fff1f2")
+                                              ? (mainWindow.homeDarkMode ? "#163826" : "#dcfce7")
+                                              : (mainWindow.homeDarkMode ? "#4a1d24" : "#fee2e2")
     readonly property color statusBorder: completed
-                                          ? (mainWindow.homeDarkMode ? "#4ade80" : "#86efac")
-                                          : (mainWindow.homeDarkMode ? "#f87171" : "#fca5a5")
+                                          ? (mainWindow.homeDarkMode ? "#4ade80" : "#22c55e")
+                                          : (mainWindow.homeDarkMode ? "#fb7185" : "#ef4444")
     readonly property color statusTextColor: completed
-                                             ? (mainWindow.homeDarkMode ? "#bbf7d0" : "#166534")
-                                             : (mainWindow.homeDarkMode ? "#fecaca" : "#b91c1c")
+                                             ? (mainWindow.homeDarkMode ? "#dcfce7" : "#166534")
+                                             : (mainWindow.homeDarkMode ? "#fecdd3" : "#b91c1c")
     readonly property color todayButtonBackground: completed
                                                    ? (mainWindow.homeDarkMode ? "#303844" : "#e5e7eb")
                                                    : todaySelected
@@ -345,11 +345,11 @@ Item {
                 Button {
                     text: completed ? "已完成" : "未完成"
                     implicitHeight: 24
-                    implicitWidth: 54
+                    implicitWidth: 58
                     onClicked: completedToggled(!completed)
 
                     background: Rectangle {
-                        radius: 8
+                        radius: 12
                         color: statusBackground
                         border.color: statusBorder
                         border.width: 1
@@ -368,13 +368,13 @@ Item {
                 Button {
                     text: "今日"
                     implicitHeight: 24
-                    implicitWidth: 50
+                    implicitWidth: 54
                     enabled: !completed && !todaySelected
                     opacity: completed ? 0.6 : 1
                     onClicked: if (!todaySelected) markTodayRequested()
 
                     background: Rectangle {
-                        radius: 8
+                        radius: 12
                         color: todayButtonBackground
                         border.color: todayButtonBorder
                         border.width: 1
@@ -384,7 +384,7 @@ Item {
                         text: parent.text
                         color: todayButtonText
                         font.pixelSize: 11
-                        font.bold: !completed
+                        font.bold: todaySelected
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
@@ -393,7 +393,7 @@ Item {
                 ComboBox {
                     id: categorySelector
                     implicitHeight: 24
-                    implicitWidth: 88
+                    implicitWidth: 96
                     enabled: !completed
                     model: {
                         const items = [mainWindow.t("未分类", "Uncategorized")]
@@ -424,30 +424,32 @@ Item {
                     }
 
                     indicator: Text {
-                        x: categorySelector.width - width - 8
-                        y: (categorySelector.height - height) / 2
                         text: "▾"
-                        color: timeColor
-                        font.pixelSize: Math.max(10, fontScale - 3)
+                        color: textColor
+                        font.pixelSize: 10
+                        anchors.right: parent.right
+                        anchors.rightMargin: 6
+                        anchors.verticalCenter: parent.verticalCenter
                     }
 
                     background: Rectangle {
-                        radius: 8
-                        color: completed ? (mainWindow.homeDarkMode ? "#303844" : "#f8fafc") : (mainWindow.homeDarkMode ? "#334155" : "#ffffff")
-                        border.color: categorySelector.popup.visible
-                                      ? "#60a5fa"
-                                      : (completed ? (mainWindow.homeDarkMode ? "#4b5563" : "#cbd5e1") : (mainWindow.homeDarkMode ? "#64748b" : "#d8dee8"))
+                        radius: 12
+                        color: completed
+                               ? (mainWindow.homeDarkMode ? "#303844" : "#f1f5f9")
+                               : (mainWindow.homeDarkMode ? "#334155" : "#f8fafc")
+                        border.color: completed
+                                      ? (mainWindow.homeDarkMode ? "#475569" : "#cbd5e1")
+                                      : (mainWindow.homeDarkMode ? "#64748b" : "#d8dee8")
                         border.width: 1
                     }
 
                     contentItem: Text {
                         text: categorySelector.displayText
-                        color: timeColor
-                        font.pixelSize: Math.max(10, fontScale - 4)
+                        color: textColor
+                        font.pixelSize: 11
                         verticalAlignment: Text.AlignVCenter
-                        leftPadding: 8
-                        rightPadding: 18
                         elide: Text.ElideRight
+                        rightPadding: 14
                     }
                 }
 

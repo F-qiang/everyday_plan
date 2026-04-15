@@ -5,7 +5,7 @@ project(everyday_day VERSION 0.2 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 查找 Qt6 必需模块
-find_package(Qt6 REQUIRED COMPONENTS Quick Sql Network)
+find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Sql Network)
 
 # Qt6 自动 MOC/RCC/UIC
 qt_standard_project_setup(REQUIRES 6.5)
@@ -63,6 +63,7 @@ set_target_properties(appeveryday_day PROPERTIES
 # 链接 Qt6 模块
 target_link_libraries(appeveryday_day
     PRIVATE Qt6::Quick
+    PRIVATE Qt6::QuickControls2
     PRIVATE Qt6::Sql
     PRIVATE Qt6::Network
 )

@@ -2,6 +2,7 @@
 #include <QQmlEngine>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include <QQuickStyle>
 
 #include "abstractcontentsmodel.h"
 #include "databasemanager.h"
@@ -10,6 +11,7 @@
 
 int main(int argc, char *argv[])
 {
+    QQuickStyle::setStyle("Basic");
     QGuiApplication app(argc, argv);
 
     // 初始化数据库
