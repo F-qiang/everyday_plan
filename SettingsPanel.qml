@@ -127,62 +127,6 @@ Item {
 
                 Rectangle {
                     Layout.fillWidth: true
-                    implicitHeight: themeLayout.implicitHeight + 32
-                    radius: 18
-                    color: root.panelBackground
-                    border.color: root.panelBorder
-                    border.width: 1
-
-                    ColumnLayout {
-                        id: themeLayout
-                        anchors.fill: parent
-                        anchors.margins: 18
-                        spacing: 12
-
-                        Label {
-                            text: root.t("主页主题", "Theme")
-                            color: root.titleColor
-                            font.pixelSize: 18
-                            font.bold: true
-                        }
-
-                        Label {
-                            Layout.fillWidth: true
-                            text: root.t("切换主区域的明暗风格。", "Switch between dark and light presentation styles for the main workspace.")
-                            color: root.subTitleColor
-                            font.pixelSize: 12
-                            wrapMode: Text.WordWrap
-                        }
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 12
-
-                            Button {
-                                text: root.t("暗色", "Dark")
-                                checkable: true
-                                checked: root.homeDarkMode
-                                highlighted: checked
-                                Layout.fillWidth: true
-                                implicitHeight: 42
-                                onClicked: root.homeDarkMode = true
-                            }
-
-                            Button {
-                                text: root.t("亮色", "Light")
-                                checkable: true
-                                checked: !root.homeDarkMode
-                                highlighted: checked
-                                Layout.fillWidth: true
-                                implicitHeight: 42
-                                onClicked: root.homeDarkMode = false
-                            }
-                        }
-                    }
-                }
-
-                Rectangle {
-                    Layout.fillWidth: true
                     implicitHeight: backgroundLayout.implicitHeight + 32
                     radius: 18
                     color: root.panelBackground

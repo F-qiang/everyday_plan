@@ -105,9 +105,34 @@ Item {
         finishTaskCompletion(taskId, completed)
     }
 
+    function updateTaskCategory(taskId, categoryId, categoryName, categoryColor) {
+        if (taskId < 0) {
+            return
+        }
+
+        const ok = DatabaseManager.updateTask(taskId, {
+            "categoryId": categoryId
+        })
+
+        if (!ok) {
+            return
+        }
+
+        mainWindow.refreshCurrentView()
+        AbstractContentsModel.loadAllFromDatabase(mainWindow.databasePath, mainWindow.currentPageType === mainWindow.pageToday, mainWindow.currentPageType === mainWindow.pageCompleted)
+
+        if (mainWindow.selectedTaskId === taskId) {
+            mainWindow.selectedTaskCategoryId = categoryId
+            mainWindow.selectedTaskCategoryName = categoryName
+            mainWindow.selectedTaskCategoryColor = categoryColor
+            mainWindow.editTaskCategoryIndex = mainWindow.categoryIndexById(categoryId)
+            openTaskById(taskId)
+        }
+    }
+
     Rectangle {
         anchors.fill: parent
-        color: mainWindow.homeDarkMode ? "#343943" : "#f4f1e8"
+        color: mainWindow.homeDarkMode ? "#343943" : "#ffffff"
     }
 
     ListView {
@@ -190,6 +215,10 @@ Item {
 
             onCompletedToggled: (completed) => {
                 root.toggleTaskCompleted(model.index_num, completed)
+            }
+
+            onCategoryChanged: (categoryId, categoryName, categoryColor) => {
+                root.updateTaskCategory(model.index_num, categoryId, categoryName, categoryColor)
             }
 
             onOpacityChanged: {

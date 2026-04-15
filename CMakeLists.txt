@@ -32,6 +32,10 @@ qt_add_qml_module(appeveryday_day
         NewTaskDialog.qml
         NewCategoryDialog.qml
         CategoryListPanel.qml
+        DetailHeaderBar.qml
+        EmptyDetailState.qml
+        DetailMetaSection.qml
+        DetailEditingSection.qml
 
     SOURCES
         abstractContentsItem.cpp

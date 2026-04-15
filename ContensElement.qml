@@ -26,25 +26,26 @@ Item {
     property int fontScale: 15
     signal detailedRequested()
     signal outlineEdited(string outline)
+    signal categoryChanged(int categoryId, string categoryName, string categoryColor)
 
     readonly property color cardBackground: completed
-                                            ? (mainWindow.homeDarkMode ? "#2f3640" : "#f1f5f9")
-                                            : (mainWindow.homeDarkMode ? "#3a4049" : "#fbf6ec")
+                                            ? (mainWindow.homeDarkMode ? "#2f3640" : "#f8fafc")
+                                            : (mainWindow.homeDarkMode ? "#3a4049" : "#ffffff")
     readonly property color cardBorder: completed
                                         ? (mainWindow.homeDarkMode ? "#64748b" : "#cbd5e1")
-                                        : (mainWindow.homeDarkMode ? "#4b5563" : "#e6d9bf")
+                                        : (mainWindow.homeDarkMode ? "#4b5563" : "#d8dee8")
     readonly property color titleColor: completed
                                         ? (mainWindow.homeDarkMode ? "#94a3b8" : "#64748b")
-                                        : (mainWindow.homeDarkMode ? "#f3f4f6" : "#3f3120")
+                                        : (mainWindow.homeDarkMode ? "#f3f4f6" : "#0f172a")
     readonly property color textColor: completed
                                        ? (mainWindow.homeDarkMode ? "#94a3b8" : "#64748b")
-                                       : (mainWindow.homeDarkMode ? "#d1d5db" : "#7a6240")
+                                       : (mainWindow.homeDarkMode ? "#d1d5db" : "#475569")
     readonly property color timeColor: completed
                                        ? (mainWindow.homeDarkMode ? "#64748b" : "#94a3b8")
-                                       : (mainWindow.homeDarkMode ? "#9ca3af" : "#8b6b42")
+                                       : (mainWindow.homeDarkMode ? "#9ca3af" : "#64748b")
     readonly property color editorBackground: completed
                                               ? (mainWindow.homeDarkMode ? "#39414c" : "#e2e8f0")
-                                              : (mainWindow.homeDarkMode ? "#454c56" : "#fffaf0")
+                                              : (mainWindow.homeDarkMode ? "#454c56" : "#ffffff")
     readonly property color doneBadgeBackground: mainWindow.homeDarkMode ? "#14532d" : "#dcfce7"
     readonly property color doneBadgeBorder: mainWindow.homeDarkMode ? "#22c55e" : "#86efac"
     readonly property color doneBadgeText: mainWindow.homeDarkMode ? "#bbf7d0" : "#166534"
@@ -389,11 +390,65 @@ Item {
                     }
                 }
 
-                Text {
-                    text: categoryName
-                    color: timeColor
-                    font.pixelSize: Math.max(10, fontScale - 4)
-                    elide: Text.ElideRight
+                ComboBox {
+                    id: categorySelector
+                    implicitHeight: 24
+                    implicitWidth: 88
+                    enabled: !completed
+                    model: {
+                        const items = [mainWindow.t("未分类", "Uncategorized")]
+                        for (let i = 0; i < mainWindow.categoryList.length; ++i) {
+                            items.push(mainWindow.categoryList[i].name)
+                        }
+                        return items
+                    }
+                    currentIndex: {
+                        if (!categoryName || categoryName === "" || categoryName === "未分类") {
+                            return 0
+                        }
+                        for (let i = 0; i < mainWindow.categoryList.length; ++i) {
+                            if (mainWindow.categoryList[i].name === categoryName) {
+                                return i + 1
+                            }
+                        }
+                        return 0
+                    }
+
+                    onActivated: {
+                        if (currentIndex <= 0) {
+                            categoryChanged(0, mainWindow.t("未分类", "Uncategorized"), "#94a3b8")
+                            return
+                        }
+                        const category = mainWindow.categoryList[currentIndex - 1]
+                        categoryChanged(category.categoryId, category.name, category.color)
+                    }
+
+                    indicator: Text {
+                        x: categorySelector.width - width - 8
+                        y: (categorySelector.height - height) / 2
+                        text: "▾"
+                        color: timeColor
+                        font.pixelSize: Math.max(10, fontScale - 3)
+                    }
+
+                    background: Rectangle {
+                        radius: 8
+                        color: completed ? (mainWindow.homeDarkMode ? "#303844" : "#f8fafc") : (mainWindow.homeDarkMode ? "#334155" : "#ffffff")
+                        border.color: categorySelector.popup.visible
+                                      ? "#60a5fa"
+                                      : (completed ? (mainWindow.homeDarkMode ? "#4b5563" : "#cbd5e1") : (mainWindow.homeDarkMode ? "#64748b" : "#d8dee8"))
+                        border.width: 1
+                    }
+
+                    contentItem: Text {
+                        text: categorySelector.displayText
+                        color: timeColor
+                        font.pixelSize: Math.max(10, fontScale - 4)
+                        verticalAlignment: Text.AlignVCenter
+                        leftPadding: 8
+                        rightPadding: 18
+                        elide: Text.ElideRight
+                    }
                 }
 
                 Item {

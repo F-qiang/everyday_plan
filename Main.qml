@@ -188,7 +188,7 @@ Window {
     property bool ganttBlueTaskBars: defaultUserSettings.ganttBlueTaskBars
     property bool ganttBlueTodayColumn: defaultUserSettings.ganttBlueTodayColumn
     property bool ganttBlueGridLines: defaultUserSettings.ganttBlueGridLines
-    property bool homeDarkMode: defaultUserSettings.homeDarkMode
+    property bool homeDarkMode: false
     property string backgroundImageSource: defaultUserSettings.backgroundImageSource
     property int navFontSize: defaultUserSettings.navFontSize
     property int middleCardFontSize: defaultUserSettings.middleCardFontSize
@@ -206,7 +206,6 @@ Window {
     readonly property color detailOnAccentColor: "#ffffff"
     readonly property color detailTonalColor: homeDarkMode ? "#334155" : "#e8f0fe"
 
-    onHomeDarkModeChanged: persistUserSettings()
     onBackgroundImageSourceChanged: persistUserSettings()
     onNavFontSizeChanged: persistUserSettings()
     onMiddleCardFontSizeChanged: persistUserSettings()
@@ -240,8 +239,8 @@ Window {
 
         background: Rectangle {
             radius: 12
-            color: parent.checked ? "#dbeafe" : (parent.pressed ? "#e5eefc" : "transparent")
-            border.color: parent.checked ? "#60a5fa" : "#d6deea"
+            color: parent.checked ? "#eff6ff" : (parent.pressed ? "#f8fafc" : "#ffffff")
+            border.color: parent.checked ? "#60a5fa" : (parent.pressed ? "#bfdbfe" : "#d8dee8")
             border.width: parent.checked ? 2 : 1
         }
 
@@ -277,14 +276,18 @@ Window {
 
         background: Rectangle {
             radius: 18
-            color: parent.down ? Qt.darker(detailTonalColor, 1.12) : (homeDarkMode ? "#364152" : "#edf3fb")
-            border.color: parent.hovered ? (homeDarkMode ? "#7c8aa0" : "#c7d6ea") : detailBorderColor
+            color: homeDarkMode
+                   ? (parent.down ? Qt.darker(detailTonalColor, 1.12) : "#364152")
+                   : (parent.down ? "#f8fafc" : "#ffffff")
+            border.color: homeDarkMode
+                          ? (parent.hovered ? "#7c8aa0" : detailBorderColor)
+                          : (parent.hovered ? "#93c5fd" : "#d8dee8")
             border.width: 1
         }
 
         contentItem: Text {
             text: parent.text
-            color: homeDarkMode ? "#dbeafe" : "#33527f"
+            color: homeDarkMode ? "#dbeafe" : "#1d4ed8"
             font.pixelSize: Math.max(12, detailFontSize - 6)
             font.bold: false
             horizontalAlignment: Text.AlignHCenter
@@ -498,6 +501,7 @@ Window {
 
     function loadUserSettings() {
         if (!AuthManager.isLoggedIn) {
+            applyUserSettings(defaultUserSettings)
             return
         }
         applyUserSettings(DatabaseManager.getUserSettings(AuthManager.currentUserId))
@@ -720,6 +724,10 @@ Window {
     // 登录状态检查
     Component.onCompleted: {
         if (!AuthManager.isLoggedIn) {
+            GanttModel.userId = -1
+            loadUserSettings()
+            loadCategories()
+            refreshCurrentView()
             openLoginWindow()
         } else {
             GanttModel.userId = AuthManager.currentUserId
@@ -768,6 +776,12 @@ Window {
                 loadUserSettings()
                 loadCategories()
                 refreshCurrentView()
+            } else {
+                GanttModel.userId = -1
+                loadUserSettings()
+                categoryList = []
+                clearCategoryFilter()
+                showTodayTasks()
             }
         }
     }
@@ -783,8 +797,8 @@ Window {
 
         background: Rectangle {
             radius: 18
-            color: homeDarkMode ? "#ffffff" : "#fffaf0"
-            border.color: homeDarkMode ? "#dbe4f0" : "#e6d9bf"
+            color: homeDarkMode ? "#ffffff" : "#ffffff"
+            border.color: homeDarkMode ? "#dbe4f0" : "#d8dee8"
             border.width: 1
         }
 
@@ -797,7 +811,7 @@ Window {
                 text: detailDateTimeField === "start" ? "选择开始时间" : "选择结束时间"
                 font.pixelSize: 18
                 font.bold: true
-                color: homeDarkMode ? "#111827" : "#3f3120"
+                color: homeDarkMode ? "#111827" : "#1f2937"
             }
 
             GridLayout {
@@ -806,19 +820,19 @@ Window {
                 rowSpacing: 10
                 Layout.fillWidth: true
 
-                Label { text: "年"; color: homeDarkMode ? "#475569" : "#7a6240" }
+                Label { text: "年"; color: homeDarkMode ? "#475569" : "#64748b" }
                 SpinBox { id: detailDateYear; from: 2020; to: 2100; editable: true; Layout.fillWidth: true }
 
-                Label { text: "月"; color: homeDarkMode ? "#475569" : "#7a6240" }
+                Label { text: "月"; color: homeDarkMode ? "#475569" : "#64748b" }
                 SpinBox { id: detailDateMonth; from: 1; to: 12; editable: true; Layout.fillWidth: true }
 
-                Label { text: "日"; color: homeDarkMode ? "#475569" : "#7a6240" }
+                Label { text: "日"; color: homeDarkMode ? "#475569" : "#64748b" }
                 SpinBox { id: detailDateDay; from: 1; to: 31; editable: true; Layout.fillWidth: true }
 
-                Label { text: "时"; color: homeDarkMode ? "#475569" : "#7a6240" }
+                Label { text: "时"; color: homeDarkMode ? "#475569" : "#64748b" }
                 SpinBox { id: detailDateHour; from: 0; to: 23; editable: true; Layout.fillWidth: true }
 
-                Label { text: "分"; color: homeDarkMode ? "#475569" : "#7a6240" }
+                Label { text: "分"; color: homeDarkMode ? "#475569" : "#64748b" }
                 SpinBox { id: detailDateMinute; from: 0; to: 59; editable: true; Layout.fillWidth: true }
             }
 
@@ -875,10 +889,10 @@ Window {
             visible: true
             readonly property bool loginPrompt: !AuthManager.isLoggedIn
             readonly property bool settingsActive: settingsVisible && AuthManager.isLoggedIn
-            color: settingsActive ? "#1e3a5f" : (loginPrompt ? (loginHoverArea.containsMouse ? "#e0efff" : "#eff6ff") : "#eff6ff")
+            color: settingsActive ? "#1e3a5f" : (loginPrompt ? (loginHoverArea.containsMouse ? "#f8fafc" : "#ffffff") : "#ffffff")
             width: leftRectangle.width
             height: leftRectangle.hight_account_tangle
-            border.color: settingsActive ? "#60a5fa" : (loginPrompt ? (loginHoverArea.containsMouse ? "#60a5fa" : "#93c5fd") : "#d7e7fb")
+            border.color: settingsActive ? "#60a5fa" : (loginPrompt ? (loginHoverArea.containsMouse ? "#60a5fa" : "#93c5fd") : "#d8dee8")
             border.width: settingsActive || loginPrompt ? 2 : 1
 
             Behavior on color {
@@ -921,14 +935,10 @@ Window {
                     anchors.margins: 10
                     height: 42
                     radius: 14
-                    color: loginHoverArea.containsMouse ? "#f8fbff" : "#ffffff"
-                    border.color: loginHoverArea.containsMouse ? "#93c5fd" : "#bfdbfe"
+                    color: "#ffffff"
+                    border.color: loginHoverArea.containsMouse ? "#cbd5e1" : "#d8dee8"
                     border.width: 1
-                    opacity: 0.96
-
-                    Behavior on color {
-                        ColorAnimation { duration: 140 }
-                    }
+                    opacity: 0.98
 
                     Behavior on border.color {
                         ColorAnimation { duration: 140 }
@@ -954,7 +964,7 @@ Window {
                     width: 38
                     height: 32
                     radius: 18
-                    color: accountTangle.settingsActive ? "#f8fafc" : (accountTangle.loginPrompt ? (loginHoverArea.containsMouse ? "#eff6ff" : "#ffffff") : "#dbeafe")
+                    color: accountTangle.settingsActive ? "#f8fafc" : (accountTangle.loginPrompt ? "#ffffff" : "#ffffff")
                     border.color: accountTangle.loginPrompt ? (loginHoverArea.containsMouse ? "#60a5fa" : "#93c5fd") : "transparent"
                     border.width: accountTangle.loginPrompt ? 1 : 0
 
@@ -1007,7 +1017,7 @@ Window {
                     implicitWidth: loginPillRow.implicitWidth + 18
                     implicitHeight: 24
                     radius: 999
-                    color: loginHoverArea.containsMouse ? "#2563eb" : "#dbeafe"
+                    color: loginHoverArea.containsMouse ? "#2563eb" : "#eff6ff"
                     border.color: loginHoverArea.containsMouse ? "#1d4ed8" : "#93c5fd"
                     border.width: 1
 
@@ -1050,7 +1060,7 @@ Window {
                     implicitWidth: 52
                     
                     background: Rectangle {
-                        color: parent.pressed ? (accountTangle.settingsActive ? "#334155" : "#dbeafe") : "transparent"
+                        color: parent.pressed ? (accountTangle.settingsActive ? "#334155" : "#eff6ff") : "transparent"
                         border.color: accountTangle.settingsActive ? "#cbd5e1" : "#93c5fd"
                         border.width: 1
                         radius: 4
@@ -1089,8 +1099,8 @@ Window {
 
             background: Rectangle {
                 radius: 12
-                color: "#f8fafc"
-                border.color: "#cbd5e1"
+                color: "#ffffff"
+                border.color: "#d8dee8"
                 border.width: 1
             }
         }
@@ -1215,29 +1225,31 @@ Window {
         color: pageBaseColor
 
         readonly property bool ganttMode: currentPageType === pageGantt
-        readonly property bool showWidePanel: ganttMode || settingsVisible || newCategoryVisible
-        readonly property bool splitMode: !showWidePanel && (detailVisible || newTaskVisible)
+        readonly property bool showWidePanel: ganttMode || settingsVisible
+        readonly property bool splitMode: !showWidePanel && (detailVisible || newTaskVisible || newCategoryVisible)
         property real detailBackPeekOffset: 0
         property real compactBackButtonScale: 1
         property real compactBackArrowOffset: 0
         property real compactBackHighlightOpacity: 0
         property real compactBackHoverOpacity: 0
         property real compactBackTitleOffset: 0
-        readonly property real splitListMinimumWidth: 320
-        readonly property real detailActionWidthEstimate: 220
-        readonly property real detailMetaWidthEstimate: Math.max(220 + 260 + 12, 300 + 300 + 12)
-        readonly property real detailInfoRowEstimate: 140 + 140 + 10
-        readonly property real detailSummaryRowEstimate: 360
-        readonly property real detailContentWidthEstimate: 110 + 90 + 10 + 320
-        readonly property real detailMinimumWidth: 40 + Math.max(detailActionWidthEstimate,
+        readonly property real splitListMinimumWidth: 280
+        readonly property real detailActionWidthEstimate: 180
+        readonly property real detailMetaWidthEstimate: Math.max(180 + 220 + 8, 240 + 220 + 8)
+        readonly property real detailInfoRowEstimate: 120 + 120 + 8
+        readonly property real detailSummaryRowEstimate: 300
+        readonly property real detailContentWidthEstimate: 84 + 72 + 8 + 220
+        readonly property real detailMinimumWidth: 24 + Math.max(detailActionWidthEstimate,
                                                                  detailMetaWidthEstimate,
                                                                  detailInfoRowEstimate,
                                                                  detailSummaryRowEstimate,
-                                                                 detailContentWidthEstimate) + Math.max(120, detailFontSize * 8)
+                                                                 detailContentWidthEstimate) + Math.max(88, detailFontSize * 6)
+        readonly property real emptyStateMinimumWidth: 340
+        readonly property real activeRightMinimumWidth: (detailVisible || newTaskVisible || newCategoryVisible) ? detailMinimumWidth : emptyStateMinimumWidth
         readonly property bool compactDetailMode: false
-        readonly property real targetMiddleWidth: showWidePanel ? 0 : ((detailVisible || newTaskVisible)
-                                                                       ? Math.min(Math.max(splitListMinimumWidth, Math.min(440, width * 0.38)), Math.max(splitListMinimumWidth, width - detailMinimumWidth))
-                                                                       : Math.max(splitListMinimumWidth, Math.min(480, width * 0.52)))
+        readonly property real targetMiddleWidth: showWidePanel ? 0 : ((detailVisible || newTaskVisible || newCategoryVisible)
+                                                                       ? Math.min(Math.max(splitListMinimumWidth, Math.min(360, width * 0.31)), Math.max(splitListMinimumWidth, width - activeRightMinimumWidth))
+                                                                       : Math.min(Math.max(splitListMinimumWidth, Math.min(340, width * 0.34)), Math.max(splitListMinimumWidth, width - activeRightMinimumWidth)))
 
         Rectangle {
             id: middlePanel
@@ -1261,8 +1273,8 @@ Window {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 44
                     radius: 12
-                    color: homeDarkMode ? "#3a4049" : "#fbf6ec"
-                    border.color: homeDarkMode ? "#4b5563" : "#e6d9bf"
+                    color: homeDarkMode ? "#3a4049" : "#ffffff"
+                    border.color: homeDarkMode ? "#4b5563" : "#d8dee8"
                     border.width: 1
                     visible: middlePanel.width > 0
 
@@ -1281,7 +1293,7 @@ Window {
 
                         Label {
                             text: pageTitleText()
-                            color: homeDarkMode ? "#f3f4f6" : "#3f3120"
+                            color: homeDarkMode ? "#f3f4f6" : "#0f172a"
                             font.pixelSize: 18
                             font.bold: true
                         }
@@ -1312,7 +1324,7 @@ Window {
         Rectangle {
             id: rightPanel
             x: middlePanel.width
-            width: Math.max(contentArea.detailMinimumWidth, parent.width - middlePanel.width)
+            width: Math.max(contentArea.activeRightMinimumWidth, parent.width - middlePanel.width)
             height: parent.height
             visible: true
             color: pageBaseColor
@@ -1369,98 +1381,21 @@ Window {
 
                     ColumnLayout {
                         anchors.fill: parent
-                        anchors.margins: 16
-                        spacing: 16
+                        anchors.margins: 8
+                        spacing: 8
 
-                        Item {
+                        DetailHeaderBar {
                             Layout.fillWidth: true
-                            implicitHeight: 48
-
-                            Rectangle {
-                                anchors.fill: parent
-                                visible: false
-                                radius: 0
-                                color: homeDarkMode ? "#303841" : "#f8fafc"
-                                opacity: 1
-                                border.width: 0
-                            }
-
-                            Rectangle {
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                anchors.bottom: parent.bottom
-                                height: 1
-                                visible: false
-                                color: homeDarkMode ? "#4b5563" : "#d7dee8"
-                                opacity: 1
-                            }
-
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 0
-                                anchors.rightMargin: 0
-                                anchors.topMargin: 0
-                                anchors.bottomMargin: 0
-                                spacing: 12
-
-                                Label {
-                                    visible: !contentArea.compactDetailMode
-                                    text: newTaskVisible ? t("新建任务", "New Task") : (newCategoryVisible ? t("新建分类", "New Category") : (detailVisible ? t("任务详情", "Task Details") : (settingsVisible ? t("设置说明", "Settings") : t("等待选择", "Waiting for selection"))))
-                                    font.pixelSize: detailFontSize
-                                    font.bold: true
-                                    color: detailTextColor
-                                }
-
-                                Item { Layout.fillWidth: true }
-
-                                ToolButton {
-                                    visible: false
-                                    text: contentArea.compactDetailMode ? t("窗口过窄，已切到详情", "Window too narrow, detail only") : t("展开目录", "Open list")
-                                    enabled: !contentArea.compactDetailMode
-                                    onClicked: middleCollapsed = false
-                                }
-
-                                Item {
-                                    visible: detailVisible && !settingsVisible
-                                    implicitWidth: Math.min(rightPanel.width * 0.34, detailActionFlow.implicitWidth)
-                                    implicitHeight: detailActionFlow.implicitHeight
-
-                                    Flow {
-                                        id: detailActionFlow
-                                        anchors.right: parent.right
-                                        width: parent.width
-                                        spacing: 10
-                                        layoutDirection: Qt.RightToLeft
-
-                                        DetailPrimaryButton {
-                                            text: t("保存", "Save")
-                                            implicitWidth: 92
-                                            onClicked: mainWindow.saveSelectedTaskEdits()
-                                        }
-
-                                        DetailActionButton {
-                                            text: t("删除", "Delete")
-                                            implicitWidth: 84
-                                            onClicked: mainWindow.deleteSelectedTask()
-                                        }
-                                    }
-                                }
-                            }
-
-                            Label {
-                                visible: contentArea.compactDetailMode && detailVisible && !settingsVisible
-                                anchors.centerIn: parent
-                                text: newTaskVisible ? t("新建任务", "New Task") : (newCategoryVisible ? t("新建分类", "New Category") : (detailVisible ? t("任务详情", "Task Details") : (settingsVisible ? t("设置说明", "Settings") : t("等待选择", "Waiting for selection"))))
-                                font.pixelSize: detailFontSize - 2
-                                font.bold: false
-                                color: homeDarkMode ? "#f8fafc" : "#111827"
-                                x: contentArea.compactBackTitleOffset
-                                z: 1
-
-                                Behavior on x {
-                                    NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
-                                }
-                            }
+                            titleText: newTaskVisible ? t("新建任务", "New Task") : (newCategoryVisible ? t("新建分类", "New Category") : (detailVisible ? (editTaskTitle.trim() === "" ? t("未命名任务", "Untitled Task") : editTaskTitle) : (settingsVisible ? t("设置说明", "Settings") : t("等待选择", "Waiting for selection"))))
+                            compactTitleText: titleText
+                            compactDetailMode: contentArea.compactDetailMode && detailVisible && !settingsVisible
+                            showActions: detailVisible && !settingsVisible
+                            homeDarkMode: mainWindow.homeDarkMode
+                            detailFontSize: mainWindow.detailFontSize
+                            detailTextColor: mainWindow.detailTextColor
+                            compactTitleColor: homeDarkMode ? "#f8fafc" : "#111827"
+                            onSaveClicked: mainWindow.saveSelectedTaskEdits()
+                            onDeleteClicked: mainWindow.deleteSelectedTask()
                         }
 
                         Rectangle {
@@ -1472,9 +1407,12 @@ Window {
                             border.width: 1
 
                             ScrollView {
+                                id: detailScrollView
                                 anchors.fill: parent
-                                anchors.margins: 16
+                                anchors.margins: 6
                                 clip: true
+                                contentWidth: availableWidth
+                                contentHeight: detailScrollContent.implicitHeight
                                 ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
                                 ScrollBar.vertical: ScrollBar {
@@ -1522,446 +1460,92 @@ Window {
                                     }
                                 }
 
-                                ColumnLayout {
-                                    width: availableWidth
-                                    spacing: 12
+                                Item {
+                                    id: detailScrollContent
+                                    width: detailScrollView.availableWidth
+                                    implicitHeight: detailColumn.implicitHeight
+
+                                    ColumnLayout {
+                                        id: detailColumn
+                                        anchors.left: parent.left
+                                        anchors.right: parent.right
+                                        anchors.top: parent.top
+                                        width: parent.width
+                                        spacing: 6
 
                                 Label {
-                                    visible: !detailVisible && !newTaskVisible
-                                    text: settingsVisible ? t("界面设置已展开到主区域，可以直接调整主题、背景图和字体大小。", "Settings are expanded in the main area. You can directly adjust theme, background, and font sizes.") : t("从中间列表选择一个任务后，右侧会在这里展示完整详情。你可以直接编辑标题、概要、分类与时间。", "Choose a task from the middle list and its full details will appear here. You can edit the title, summary, category, and time directly.")
+                                    visible: false
+                                    text: settingsVisible ? t("界面设置已展开到主区域，可以直接调整主题、背景图和字体大小。", "Settings are expanded in the main area. You can directly adjust theme, background, and font sizes.") : t("从中间列表选择一个任务后，右侧会在这里展示完整详情。你可以直接编辑标题、概要与时间。", "Choose a task from the middle list and its full details will appear here. You can edit the title, summary, and time directly.")
                                     wrapMode: Text.WordWrap
                                     color: detailHintTextColor
                                     font.pixelSize: detailFontSize - 2
                                 }
 
-                                Item {
+                                EmptyDetailState {
                                     visible: !detailVisible && !newTaskVisible
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-
-                                    ColumnLayout {
-                                        anchors.centerIn: parent
-                                        width: Math.min(parent.width * 0.74, 420)
-                                        spacing: 16
-
-                                        Rectangle {
-                                            Layout.alignment: Qt.AlignHCenter
-                                            width: 72
-                                            height: 72
-                                            radius: 24
-                                            color: homeDarkMode ? "#334155" : "#eef4ff"
-                                            border.color: homeDarkMode ? "#475569" : "#c7d2fe"
-                                            border.width: 1
-
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: "◫"
-                                                color: homeDarkMode ? "#bfdbfe" : "#2563eb"
-                                                font.pixelSize: 30
-                                            }
-                                        }
-
-                                        Label {
-                                            Layout.alignment: Qt.AlignHCenter
-                                            text: t("选择一个任务开始查看详情", "Select a task to view details")
-                                            color: detailTextColor
-                                            font.pixelSize: detailFontSize + 2
-                                            font.bold: true
-                                            horizontalAlignment: Text.AlignHCenter
-                                        }
-
-                                        Label {
-                                            Layout.fillWidth: true
-                                            text: t("中间列表会一直保留在左侧，你可以随时切换任务；右侧区域专门用于展示和编辑当前任务内容。", "The middle list stays visible so you can switch tasks anytime, while the right panel is dedicated to viewing and editing the current task.")
-                                            color: detailHintTextColor
-                                            font.pixelSize: Math.max(12, detailFontSize - 6)
-                                            wrapMode: Text.WordWrap
-                                            horizontalAlignment: Text.AlignHCenter
-                                        }
-                                    }
+                                    homeDarkMode: mainWindow.homeDarkMode
+                                    detailFontSize: mainWindow.detailFontSize
+                                    detailTextColor: mainWindow.detailTextColor
+                                    detailHintTextColor: mainWindow.detailHintTextColor
+                                    tFunc: mainWindow.t
                                 }
 
-                                ColumnLayout {
-                                    visible: detailVisible
-                                    Layout.fillWidth: true
-                                    spacing: 12
-
-                                    DetailEditorField {
-                                        Layout.fillWidth: true
-                                        implicitHeight: 46
-                                        text: editTaskTitle
-                                        font.pixelSize: detailFontSize + 2
-                                        font.bold: true
-                                        placeholderText: "请输入任务标题"
-                                        onTextChanged: editTaskTitle = text
-                                    }
-
-                                    RowLayout {
-                                        Layout.fillWidth: true
-                                        spacing: 8
-
-                                        Rectangle {
-                                            width: 12
-                                            height: 12
-                                            radius: 6
-                                            color: selectedTaskCategoryColor
-                                        }
-
-                                        Label {
-                                            text: selectedTaskCategoryName
-                                            color: detailMutedTextColor
-                                            font.pixelSize: Math.max(12, detailFontSize - 6)
-                                        }
-
-                                        Item { Layout.fillWidth: true }
-                                    }
+                                DetailMetaSection {
+                                    visibleSection: detailVisible
+                                    homeDarkMode: mainWindow.homeDarkMode
+                                    detailFontSize: mainWindow.detailFontSize
+                                    editTaskTitle: mainWindow.editTaskTitle
+                                    selectedTaskCategoryColor: mainWindow.selectedTaskCategoryColor
+                                    selectedTaskCategoryName: mainWindow.selectedTaskCategoryName
+                                    selectedTaskAuthor: mainWindow.selectedTaskAuthor
+                                    selectedTaskCreatedAt: mainWindow.selectedTaskCreatedAt
+                                    editTaskStartDate: mainWindow.editTaskStartDate
+                                    editTaskDueDate: mainWindow.editTaskDueDate
+                                    editTaskPriority: mainWindow.editTaskPriority
+                                    editTaskCategoryIndex: mainWindow.editTaskCategoryIndex
+                                    categoryList: mainWindow.categoryList
+                                    showDetailAuthor: mainWindow.showDetailAuthor
+                                    showDetailCreatedDate: mainWindow.showDetailCreatedDate
+                                    showDetailStartDate: mainWindow.showDetailStartDate
+                                    showDetailDueDate: mainWindow.showDetailDueDate
+                                    showDetailPriority: mainWindow.showDetailPriority
+                                    detailTextColor: mainWindow.detailTextColor
+                                    detailMutedTextColor: mainWindow.detailMutedTextColor
+                                    detailHintTextColor: mainWindow.detailHintTextColor
+                                    detailBorderColor: mainWindow.detailBorderColor
+                                    detailElevatedColor: mainWindow.detailElevatedColor
+                                    detailAccentColor: mainWindow.detailAccentColor
+                                    detailOnAccentColor: mainWindow.detailOnAccentColor
+                                    detailTonalColor: mainWindow.detailTonalColor
+                                    tFunc: mainWindow.t
+                                    formatDateTimeFunc: mainWindow.formatDisplayDateTime
+                                    openDateTimeEditorFunc: mainWindow.openDateTimeEditor
+                                    onTitleEdited: mainWindow.editTaskTitle = value
+                                    onStartDateEdited: mainWindow.editTaskStartDate = value
+                                    onDueDateEdited: mainWindow.editTaskDueDate = value
+                                    onPriorityEdited: mainWindow.editTaskPriority = value
+                                    onCategoryIndexEdited: mainWindow.editTaskCategoryIndex = value
                                 }
 
-                                ColumnLayout {
-                                    visible: detailVisible && (showDetailAuthor || showDetailCreatedDate || showDetailStartDate || showDetailDueDate)
-                                    Layout.fillWidth: true
-                                    spacing: 12
-
-                                    DetailCard {
-                                        visible: showDetailAuthor
-                                        Layout.fillWidth: true
-                                        implicitHeight: 68
-
-                                        Label {
-                                            id: authorLabel
-                                            anchors.fill: parent
-                                            anchors.margins: 12
-                                            text: t("作者：", "Author: ") + selectedTaskAuthor
-                                            color: detailHintTextColor
-                                            wrapMode: Text.WordWrap
-                                            verticalAlignment: Text.AlignVCenter
-                                            font.pixelSize: Math.max(12, detailFontSize - 7)
-                                        }
-                                    }
-
-                                    DetailCard {
-                                        visible: showDetailCreatedDate
-                                        Layout.fillWidth: true
-                                        implicitHeight: 68
-
-                                        Label {
-                                            id: createdLabel
-                                            anchors.fill: parent
-                                            anchors.margins: 12
-                                            text: t("创建日期：", "Created: ") + mainWindow.formatDisplayDateTime(selectedTaskCreatedAt)
-                                            color: detailHintTextColor
-                                            wrapMode: Text.WordWrap
-                                            verticalAlignment: Text.AlignVCenter
-                                            font.pixelSize: Math.max(12, detailFontSize - 7)
-                                        }
-                                    }
-
-                                    DetailCard {
-                                        visible: showDetailStartDate
-                                        Layout.fillWidth: true
-                                        implicitHeight: 68
-
-                                        RowLayout {
-                                            anchors.fill: parent
-                                            anchors.margins: 12
-                                            spacing: 10
-
-                                            Label {
-                                                text: t("开始时间", "Start time")
-                                                color: detailHintTextColor
-                                                font.pixelSize: Math.max(12, detailFontSize - 7)
-                                                Layout.preferredWidth: 72
-                                                Layout.alignment: Qt.AlignVCenter
-                                            }
-
-                                            DetailEditorField {
-                                                Layout.fillWidth: true
-                                                Layout.alignment: Qt.AlignVCenter
-                                                text: editTaskStartDate === "" ? t("未设置", "Not set") : editTaskStartDate
-                                                readOnly: true
-                                            }
-
-                                            DetailActionButton {
-                                                text: t("选择", "Pick")
-                                                implicitWidth: 64
-                                                Layout.alignment: Qt.AlignVCenter
-                                                onClicked: mainWindow.openDateTimeEditor("start")
-                                            }
-
-                                            DetailActionButton {
-                                                visible: editTaskStartDate !== ""
-                                                text: t("清空", "Clear")
-                                                implicitWidth: 64
-                                                Layout.alignment: Qt.AlignVCenter
-                                                onClicked: editTaskStartDate = ""
-                                            }
-                                        }
-                                    }
-
-                                    DetailCard {
-                                        visible: showDetailDueDate
-                                        Layout.fillWidth: true
-                                        implicitHeight: 68
-
-                                        RowLayout {
-                                            anchors.fill: parent
-                                            anchors.margins: 12
-                                            spacing: 10
-
-                                            Label {
-                                                text: t("结束时间", "Due time")
-                                                color: detailHintTextColor
-                                                font.pixelSize: Math.max(12, detailFontSize - 7)
-                                                Layout.preferredWidth: 72
-                                                Layout.alignment: Qt.AlignVCenter
-                                            }
-
-                                            DetailEditorField {
-                                                Layout.fillWidth: true
-                                                Layout.alignment: Qt.AlignVCenter
-                                                text: editTaskDueDate === "" ? t("未设置", "Not set") : editTaskDueDate
-                                                readOnly: true
-                                            }
-
-                                            DetailActionButton {
-                                                text: t("选择", "Pick")
-                                                implicitWidth: 64
-                                                Layout.alignment: Qt.AlignVCenter
-                                                onClicked: mainWindow.openDateTimeEditor("due")
-                                            }
-
-                                            DetailActionButton {
-                                                visible: editTaskDueDate !== ""
-                                                text: t("清空", "Clear")
-                                                implicitWidth: 64
-                                                Layout.alignment: Qt.AlignVCenter
-                                                onClicked: editTaskDueDate = ""
-                                            }
-                                        }
-                                    }
-                                }
-
-                                DetailCard {
-                                    visible: detailVisible && showDetailPriority
-                                    Layout.fillWidth: true
-                                    implicitHeight: 68
-
-                                    RowLayout {
-                                        anchors.fill: parent
-                                        anchors.margins: 12
-                                        spacing: 10
-
-                                        Label {
-                                            text: t("优先级", "Priority")
-                                            color: detailHintTextColor
-                                            font.pixelSize: Math.max(12, detailFontSize - 7)
-                                            Layout.preferredWidth: 72
-                                            Layout.alignment: Qt.AlignVCenter
-                                        }
-
-                                        DetailComboBox {
-                                            id: detailPriorityCombo
-                                            Layout.alignment: Qt.AlignVCenter
-                                            model: ["低", "中", "高", "紧急"]
-                                            currentIndex: Math.max(0, editTaskPriority - 1)
-                                            implicitWidth: 156
-                                            onActivated: editTaskPriority = currentIndex + 1
-                                        }
-
-                                        Item { Layout.fillWidth: true }
-                                    }
-                                }
-
-                                DetailCard {
-                                    visible: detailVisible
-                                    Layout.fillWidth: true
-                                    implicitHeight: 68
-
-                                    RowLayout {
-                                        anchors.fill: parent
-                                        anchors.margins: 12
-                                        spacing: 10
-
-                                        Label {
-                                            text: t("分类", "Category")
-                                            color: detailHintTextColor
-                                            font.pixelSize: Math.max(12, detailFontSize - 7)
-                                            Layout.preferredWidth: 72
-                                            Layout.alignment: Qt.AlignVCenter
-                                        }
-
-                                        DetailComboBox {
-                                            id: detailCategoryCombo
-                                            Layout.alignment: Qt.AlignVCenter
-                                            model: {
-                                                const items = ["未分类"]
-                                                for (let i = 0; i < categoryList.length; ++i) {
-                                                    items.push(categoryList[i].name)
-                                                }
-                                                return items
-                                            }
-                                            implicitWidth: 180
-                                            currentIndex: editTaskCategoryIndex
-                                            onActivated: editTaskCategoryIndex = currentIndex
-                                        }
-
-                                        Item { Layout.fillWidth: true }
-                                    }
-                                }
-
-                                DetailCard {
-                                    visible: detailVisible
-                                    Layout.fillWidth: true
-                                    implicitHeight: 56
-                                    color: homeDarkMode ? "#283445" : "#f4efe4"
-                                    border.color: homeDarkMode ? "#4b6078" : "#e5d5b6"
-                                    border.width: 1
-
-                                    RowLayout {
-                                        anchors.fill: parent
-                                        anchors.margins: 14
-                                        spacing: 10
-
-                                        Rectangle {
-                                            width: 3
-                                            height: 26
-                                            radius: 1.5
-                                            color: detailAccentColor
-                                            Layout.alignment: Qt.AlignVCenter
-                                        }
-
-                                        Label {
-                                            text: t("编辑区", "Editing")
-                                            color: detailTextColor
-                                            font.pixelSize: Math.max(12, detailFontSize - 6)
-                                            font.bold: true
-                                            Layout.alignment: Qt.AlignVCenter
-                                        }
-
-                                        Label {
-                                            Layout.fillWidth: true
-                                            text: t("在这里调整概要、正文与当前状态。", "Use this section to edit the summary, body, and current task state.")
-                                            color: detailHintTextColor
-                                            font.pixelSize: Math.max(11, detailFontSize - 8)
-                                            wrapMode: Text.WordWrap
-                                            Layout.alignment: Qt.AlignVCenter
-                                        }
-                                    }
-                                }
-
-                                DetailCard {
-                                    visible: detailVisible
-                                    Layout.fillWidth: true
-                                    implicitHeight: 152
-                                    color: homeDarkMode ? "#323945" : "#fcfaf5"
-                                    border.color: detailBorderColor
-                                    border.width: 1
-
-                                    ColumnLayout {
-                                        anchors.fill: parent
-                                        anchors.margins: 14
-                                        spacing: 10
-
-                                        RowLayout {
-                                            Layout.fillWidth: true
-                                            spacing: 10
-
-                                            Rectangle {
-                                                width: 3
-                                                height: 24
-                                                radius: 1.5
-                                                color: detailAccentColor
-                                                Layout.alignment: Qt.AlignVCenter
-                                            }
-
-                                            Label {
-                                                text: "概要"
-                                                color: detailTextColor
-                                                font.pixelSize: Math.max(13, detailFontSize - 5)
-                                                font.bold: true
-                                                Layout.alignment: Qt.AlignVCenter
-                                            }
-
-                                            Label {
-                                                text: "支持修改摘要说明，正文为空时会自动复用概要"
-                                                color: detailHintTextColor
-                                                font.pixelSize: Math.max(11, detailFontSize - 8)
-                                                Layout.alignment: Qt.AlignVCenter
-                                            }
-                                        }
-
-                                        TextArea {
-                                            id: detailOutlineText
-                                            Layout.fillWidth: true
-                                            Layout.fillHeight: true
-                                            wrapMode: TextEdit.Wrap
-                                            text: editTaskOutline
-                                            onTextChanged: editTaskOutline = text
-                                            color: detailTextColor
-                                            placeholderText: t("请输入概要说明", "Enter summary")
-                                            selectedTextColor: detailOnAccentColor
-                                            selectionColor: detailAccentColor
-                                            topPadding: 14
-                                            bottomPadding: 14
-                                            leftPadding: 14
-                                            rightPadding: 14
-                                            background: Rectangle {
-                                                color: homeDarkMode ? "#313b47" : "#fbfdff"
-                                                radius: 12
-                                                border.color: detailOutlineText.activeFocus
-                                                              ? (homeDarkMode ? "#6d8299" : "#c9d9e8")
-                                                              : detailBorderColor
-                                                border.width: 1
-
-                                                Rectangle {
-                                                    anchors.fill: parent
-                                                    radius: 12
-                                                    color: detailAccentColor
-                                                    opacity: detailOutlineText.activeFocus ? (homeDarkMode ? 0.045 : 0.028) : 0
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                DetailCard {
-                                    visible: detailVisible
-                                    Layout.fillWidth: true
-                                    implicitHeight: 56
-                                    color: homeDarkMode ? "#263240" : "#eef4fb"
-                                    border.color: homeDarkMode ? "#44607e" : "#c9d9ee"
-                                    border.width: 1
-
-                                    RowLayout {
-                                        anchors.fill: parent
-                                        anchors.margins: 14
-                                        spacing: 10
-
-                                        Rectangle {
-                                            width: 3
-                                            height: 26
-                                            radius: 1.5
-                                            color: detailAccentColor
-                                            Layout.alignment: Qt.AlignVCenter
-                                        }
-
-                                        Label {
-                                            text: t("附件区", "Attachments")
-                                            color: detailTextColor
-                                            font.pixelSize: Math.max(12, detailFontSize - 6)
-                                            font.bold: true
-                                            Layout.alignment: Qt.AlignVCenter
-                                        }
-
-                                        Label {
-                                            Layout.fillWidth: true
-                                            text: t("下方区域用于选择、预览和管理附件内容。", "Use the section below to choose, preview, and manage attachments.")
-                                            color: detailHintTextColor
-                                            font.pixelSize: Math.max(11, detailFontSize - 8)
-                                            wrapMode: Text.WordWrap
-                                            Layout.alignment: Qt.AlignVCenter
-                                        }
-                                    }
+                                DetailEditingSection {
+                                    visibleSection: detailVisible
+                                    homeDarkMode: mainWindow.homeDarkMode
+                                    detailFontSize: mainWindow.detailFontSize
+                                    editTaskOutline: mainWindow.editTaskOutline
+                                    editTaskContent: mainWindow.editTaskContent
+                                    editTaskCompleted: mainWindow.editTaskCompleted
+                                    detailTextColor: mainWindow.detailTextColor
+                                    detailHintTextColor: mainWindow.detailHintTextColor
+                                    detailMutedTextColor: mainWindow.detailMutedTextColor
+                                    detailBorderColor: mainWindow.detailBorderColor
+                                    detailAccentColor: mainWindow.detailAccentColor
+                                    detailOnAccentColor: mainWindow.detailOnAccentColor
+                                    tFunc: mainWindow.t
+                                    contentIsImageFunc: mainWindow.contentIsImage
+                                    contentIsFileFunc: mainWindow.contentIsFile
+                                    onOutlineEdited: mainWindow.editTaskOutline = value
+                                    onContentEdited: mainWindow.editTaskContent = value
+                                    onCompletedEdited: mainWindow.editTaskCompleted = value
                                 }
 
                                 Label {
@@ -1978,31 +1562,52 @@ Window {
 
                                         ColumnLayout {
                                             width: parent.width
-                                            spacing: 14
+                                            spacing: 8
 
-                                            RowLayout {
+                                            ColumnLayout {
                                                 Layout.fillWidth: true
-                                                spacing: 12
+                                                spacing: 6
 
-                                                Label {
-                                                    text: t("附件", "Attachment")
-                                                    color: detailTextColor
-                                                    font.pixelSize: Math.max(13, detailFontSize - 5)
-                                                    font.bold: true
+                                                RowLayout {
+                                                    Layout.fillWidth: true
+                                                    spacing: 10
+
+                                                    Label {
+                                                        text: t("附件", "Attachment")
+                                                        color: detailTextColor
+                                                        font.pixelSize: Math.max(13, detailFontSize - 5)
+                                                        font.bold: true
+                                                    }
+
+                                                    Rectangle {
+                                                        width: 8
+                                                        height: 8
+                                                        radius: 4
+                                                        color: editTaskContent.trim() === "" ? (homeDarkMode ? "#64748b" : "#94a3b8") : detailAccentColor
+                                                        Layout.alignment: Qt.AlignVCenter
+                                                    }
+
+                                                    Label {
+                                                        Layout.fillWidth: true
+                                                        text: mainWindow.contentIsFile(editTaskContent) || mainWindow.contentIsImage(editTaskContent) ? t("已选择文件", "File selected") : t("未选择附件", "No attachment selected")
+                                                        color: detailHintTextColor
+                                                        font.pixelSize: Math.max(11, detailFontSize - 8)
+                                                        elide: Text.ElideRight
+                                                    }
                                                 }
 
                                                 Label {
-                                                    text: mainWindow.contentIsFile(editTaskContent) || mainWindow.contentIsImage(editTaskContent) ? t("已选择文件", "File selected") : t("可附加文件或图片", "Attach a file or image")
+                                                    Layout.fillWidth: true
+                                                    text: t("可添加文件或图片，附件会显示在下方卡片中。", "Add a file or image. The selected attachment will appear in the card below.")
                                                     color: detailHintTextColor
                                                     font.pixelSize: Math.max(11, detailFontSize - 8)
+                                                    wrapMode: Text.WordWrap
                                                 }
-
-                                                Item { Layout.fillWidth: true }
                                             }
 
                                             Flow {
                                                 width: parent.width
-                                                spacing: 10
+                                                spacing: 8
 
                                                 DetailActionButton {
                                                     text: "选择附件文件"
@@ -2020,7 +1625,7 @@ Window {
 
                                             Item {
                                                 width: 1
-                                                height: 4
+                                                height: 2
                                             }
 
                                             DetailCard {
@@ -2165,12 +1770,29 @@ Window {
                                                         }
                                                     }
 
-                                                    Label {
+                                                    ColumnLayout {
                                                         Layout.fillWidth: true
-                                                        verticalAlignment: Text.AlignVCenter
-                                                        elide: Text.ElideMiddle
-                                                        color: editTaskContent.trim() === "" ? detailMutedTextColor : detailHintTextColor
-                                                        text: editTaskContent.trim() === "" ? t("未选择附件，可添加文件或图片", "No attachment selected. Add a file or image") : mainWindow.selectedFileName(editTaskContent)
+                                                        spacing: 2
+                                                        Layout.alignment: Qt.AlignVCenter
+
+                                                        Label {
+                                                            Layout.fillWidth: true
+                                                            verticalAlignment: Text.AlignVCenter
+                                                            elide: Text.ElideMiddle
+                                                            color: editTaskContent.trim() === "" ? detailTextColor : detailHintTextColor
+                                                            text: editTaskContent.trim() === "" ? t("未选择附件", "No attachment selected") : mainWindow.selectedFileName(editTaskContent)
+                                                            font.pixelSize: Math.max(12, detailFontSize - 7)
+                                                            font.bold: editTaskContent.trim() !== ""
+                                                        }
+
+                                                        Label {
+                                                            Layout.fillWidth: true
+                                                            visible: editTaskContent.trim() === ""
+                                                            text: t("点击这里或使用上方按钮添加文件或图片", "Click here or use the buttons above to add a file or image")
+                                                            color: detailHintTextColor
+                                                            font.pixelSize: Math.max(10, detailFontSize - 9)
+                                                            wrapMode: Text.WordWrap
+                                                        }
                                                     }
                                                 }
                                             }
@@ -2345,11 +1967,14 @@ Window {
                         }
                     }
                 }
+
+                }
+
                 SettingsPanel {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     visible: settingsVisible
-                    homeDarkMode: mainWindow.homeDarkMode
+                    homeDarkMode: false
                     uiLanguage: mainWindow.uiLanguage
                     backgroundImageSource: mainWindow.backgroundImageSource
                     navFontSize: mainWindow.navFontSize
@@ -2364,10 +1989,6 @@ Window {
                     ganttBlueTaskBars: mainWindow.ganttBlueTaskBars
                     ganttBlueTodayColumn: mainWindow.ganttBlueTodayColumn
                     ganttBlueGridLines: mainWindow.ganttBlueGridLines
-                    onHomeDarkModeChanged: {
-                        mainWindow.homeDarkMode = homeDarkMode
-                        mainWindow.persistUserSettings()
-                    }
                     onBackgroundImageSourceChanged: {
                         mainWindow.backgroundImageSource = backgroundImageSource
                         mainWindow.persistUserSettings()

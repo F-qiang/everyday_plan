@@ -667,16 +667,6 @@ Item {
                                     radius: 21
                                     color: panel
                                     border.color: "transparent"
-
-                                    Rectangle {
-                                        anchors.left: parent.left
-                                        anchors.right: parent.right
-                                        anchors.top: parent.top
-                                        height: parent.height * 0.52
-                                        radius: 21
-                                        color: homeDarkMode ? "#f8fbff" : "#fff9ef"
-                                        opacity: 0.95
-                                    }
                                 }
 
                                 RowLayout {
