@@ -1,6 +1,30 @@
 #include "ganttmodel.h"
 #include "databasemanager.h"
 #include <QDebug>
+#include <QStringView>
+
+namespace {
+QDate parseTaskDate(const QString &value)
+{
+    const QString source = value.trimmed();
+    if (source.isEmpty()) {
+        return QDate();
+    }
+
+    const QStringView datePart = QStringView{source}.left(10);
+    QDate date = QDate::fromString(datePart.toString(), "yyyy-MM-dd");
+    if (date.isValid()) {
+        return date;
+    }
+
+    date = QDate::fromString(source, Qt::ISODate);
+    if (date.isValid()) {
+        return date;
+    }
+
+    return QDate::fromString(source, "yyyy-MM-dd HH:mm");
+}
+}
 
 GanttTaskItem::GanttTaskItem(QObject *parent)
     : QObject(parent)
@@ -179,11 +203,11 @@ void GanttModel::loadTasks()
         item->setTaskId(taskMap["taskId"].toInt());
         item->setTitle(taskMap["title"].toString());
         item->setDescription(taskMap["description"].toString());
-        item->setStartDate(QDate::fromString(taskMap["startDate"].toString(), "yyyy-MM-dd"));
+        item->setStartDate(parseTaskDate(taskMap["startDate"].toString()));
 
         const QString endDateStr = taskMap["endDate"].toString();
         if (!endDateStr.isEmpty()) {
-            item->setEndDate(QDate::fromString(endDateStr, "yyyy-MM-dd"));
+            item->setEndDate(parseTaskDate(endDateStr));
         } else {
             item->setEndDate(item->startDate());
         }

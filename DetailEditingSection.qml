@@ -4,7 +4,6 @@ import QtQuick.Layouts 1.15
 
 ColumnLayout {
     id: root
-
     property bool visibleSection: true
     property bool homeDarkMode: true
     property int detailFontSize: 20
@@ -20,358 +19,219 @@ ColumnLayout {
     property var tFunc
     property var contentIsImageFunc
     property var contentIsFileFunc
+    property int pendingFocusIndex: -1
     signal outlineEdited(string value)
+    signal editingFinished()
     signal contentEdited(string value)
     signal completedEdited(bool value)
 
     function checklistItemsFromContent(content) {
-        const source = (content || "").replace(/\r/g, "")
-        const rawLines = source === "" ? [] : source.split("\n")
+        const lines = ((content || "") + "").replace(/\r/g, "").split("\n")
         const items = []
-        for (let i = 0; i < rawLines.length; ++i) {
-            const rawLine = rawLines[i]
-            if (rawLine.trim() === "") {
-                continue
-            }
+        for (let i = 0; i < lines.length; ++i) {
+            const raw = lines[i]
+            if (raw.trim() === "") continue
             let completed = false
-            let text = rawLine
-            if (/^\s*\[x\]\s*/i.test(rawLine)) {
-                completed = true
-                text = rawLine.replace(/^\s*\[x\]\s*/i, "")
-            } else if (/^\s*\[ \]\s*/.test(rawLine)) {
-                text = rawLine.replace(/^\s*\[ \]\s*/, "")
-            } else if (/^\s*✓\s*/.test(rawLine)) {
-                completed = true
-                text = rawLine.replace(/^\s*✓\s*/, "")
-            } else if (/^\s*○\s*/.test(rawLine)) {
-                text = rawLine.replace(/^\s*○\s*/, "")
-            }
-            items.push({
-                completed: completed,
-                text: text
-            })
+            let text = raw
+            if (/^\s*\[x\]\s*/i.test(raw)) { completed = true; text = raw.replace(/^\s*\[x\]\s*/i, "") }
+            else if (/^\s*\[ \]\s*/.test(raw)) text = raw.replace(/^\s*\[ \]\s*/, "")
+            else if (/^\s*✓\s*/.test(raw)) { completed = true; text = raw.replace(/^\s*✓\s*/, "") }
+            else if (/^\s*○\s*/.test(raw)) text = raw.replace(/^\s*○\s*/, "")
+            items.push({ completed: completed, text: text })
         }
         return items
     }
-
     function checklistContentFromItems(items) {
         const lines = []
         for (let i = 0; i < items.length; ++i) {
             const text = (items[i].text || "").trim()
-            if (text === "") {
-                continue
-            }
-            lines.push((items[i].completed ? "[x] " : "[ ] ") + text)
+            if (text !== "") lines.push((items[i].completed ? "[x] " : "[ ] ") + text)
         }
         return lines.join("\n")
     }
-
     function toggleChecklistItem(index) {
         const items = checklistItemsFromContent(editTaskContent)
-        if (index < 0 || index >= items.length) {
-            return
-        }
+        if (index < 0 || index >= items.length) return
         items[index].completed = !items[index].completed
         contentEdited(checklistContentFromItems(items))
     }
-
     function updateChecklistItemText(index, value) {
         const items = checklistItemsFromContent(editTaskContent)
-        if (index < 0 || index >= items.length) {
-            return
-        }
+        if (index < 0 || index >= items.length) return
         items[index].text = value
         contentEdited(checklistContentFromItems(items))
     }
-
     function removeChecklistItem(index) {
         const items = checklistItemsFromContent(editTaskContent)
-        if (index < 0 || index >= items.length) {
-            return
-        }
+        if (index < 0 || index >= items.length) return
         items.splice(index, 1)
         contentEdited(checklistContentFromItems(items))
     }
-
     function appendChecklistItem() {
+        const source = ((editTaskContent || "") + "").replace(/\r/g, "")
+        pendingFocusIndex = checklistItemsFromContent(editTaskContent).length
+        contentEdited(source === "" ? "[ ] " : source + "\n[ ] ")
+    }
+    function createChecklistItemAfter(index, value) {
         const items = checklistItemsFromContent(editTaskContent)
-        items.push({
-            completed: false,
-            text: tFunc("下一步", "Next step")
-        })
-        contentEdited(checklistContentFromItems(items))
+        if (index < 0 || index >= items.length) return
+        items[index].text = value
+        items.splice(index + 1, 0, { completed: false, text: "" })
+        pendingFocusIndex = index + 1
+        contentEdited(checklistContentFromItems(items) + "\n[ ] ")
     }
 
     visible: visibleSection
     Layout.fillWidth: true
-    spacing: 8
+    spacing: 4
 
     Rectangle {
         Layout.fillWidth: true
-        implicitHeight: 144
+        implicitHeight: summaryColumn.implicitHeight + 6
         radius: 12
         color: root.homeDarkMode ? "#323945" : "#fcfaf5"
         border.color: root.detailBorderColor
         border.width: 1
-
         ColumnLayout {
+            id: summaryColumn
             anchors.fill: parent
-            anchors.margins: 8
-            spacing: 6
-
+            anchors.margins: 4
+            spacing: 2
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 6
-
-                Rectangle {
-                    width: 3
-                    height: 24
-                    radius: 1.5
-                    color: root.detailAccentColor
-                    Layout.alignment: Qt.AlignVCenter
-                }
-
-                Label {
-                    text: qsTr("概要")
-                    color: root.detailTextColor
-                    font.pixelSize: Math.max(13, root.detailFontSize - 5)
-                    font.bold: true
-                    Layout.alignment: Qt.AlignVCenter
-                }
-
-                Label {
-                    text: qsTr("支持修改摘要说明，正文为空时会自动复用概要")
-                    color: root.detailHintTextColor
-                    font.pixelSize: Math.max(11, root.detailFontSize - 8)
-                    Layout.alignment: Qt.AlignVCenter
-                }
+                Rectangle { width: 3; height: 24; radius: 1.5; color: root.detailAccentColor }
+                Label { text: qsTr("概要"); color: root.detailTextColor; font.pixelSize: Math.max(13, root.detailFontSize - 5); font.bold: true }
+                Label { text: qsTr("支持修改摘要说明，正文为空时会自动复用概要"); color: root.detailHintTextColor; font.pixelSize: Math.max(11, root.detailFontSize - 8) }
             }
-
             TextArea {
                 Layout.fillWidth: true
-                Layout.fillHeight: true
+                Layout.preferredHeight: Math.max(64, Math.min(contentHeight + topPadding + bottomPadding, 140))
                 wrapMode: TextEdit.Wrap
                 text: root.editTaskOutline
                 onTextChanged: root.outlineEdited(text)
+                onActiveFocusChanged: {
+                    if (!activeFocus) {
+                        root.editingFinished()
+                    }
+                }
                 color: root.detailTextColor
                 placeholderText: root.tFunc("请输入概要说明", "Enter summary")
                 selectedTextColor: root.detailOnAccentColor
                 selectionColor: root.detailAccentColor
-                topPadding: 14
-                bottomPadding: 14
-                leftPadding: 14
-                rightPadding: 14
-
-                background: Rectangle {
-                    color: root.homeDarkMode ? "#313b47" : "#fbfdff"
-                    radius: 12
-                    border.color: parent.activeFocus ? (root.homeDarkMode ? "#6d8299" : "#c9d9e8") : root.detailBorderColor
-                    border.width: 1
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: 12
-                        color: root.detailAccentColor
-                        opacity: parent.parent.activeFocus ? (root.homeDarkMode ? 0.045 : 0.028) : 0
-                    }
-                }
+                topPadding: 6; bottomPadding: 6; leftPadding: 12; rightPadding: 12
+                background: Rectangle { color: root.homeDarkMode ? "#313b47" : "#fbfdff"; radius: 12; border.color: parent.activeFocus ? (root.homeDarkMode ? "#6d8299" : "#c9d9e8") : root.detailBorderColor; border.width: 1 }
             }
         }
     }
 
     Rectangle {
         Layout.fillWidth: true
-        radius: 12
-        color: root.editTaskCompleted ? (root.homeDarkMode ? "#173a2d" : "#edf9f1") : (root.homeDarkMode ? "#423225" : "#fff6ea")
-        border.color: root.editTaskCompleted ? (root.homeDarkMode ? "#3fbf89" : "#9adbb8") : (root.homeDarkMode ? "#f2a365" : "#f6c48a")
-
-        ColumnLayout {
-            anchors.fill: parent
-            anchors.margins: 12
-            spacing: 6
-
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 10
-
-                Rectangle {
-                    width: 22
-                    height: 22
-                    radius: 11
-                    color: root.editTaskCompleted ? (root.homeDarkMode ? "#1f5a42" : "#dcfce7") : (root.homeDarkMode ? "#5a4026" : "#ffedd5")
-                    border.color: root.editTaskCompleted ? (root.homeDarkMode ? "#4ade80" : "#86efac") : "#fdba74"
-                    border.width: 1
-                    Layout.alignment: Qt.AlignVCenter
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: root.editTaskCompleted ? "✓" : "·"
-                        color: root.editTaskCompleted ? (root.homeDarkMode ? "#bbf7d0" : "#15803d") : (root.homeDarkMode ? "#fed7aa" : "#c2410c")
-                        font.pixelSize: root.editTaskCompleted ? 12 : 18
-                        font.bold: root.editTaskCompleted
-                    }
-                }
-
-                Label {
-                    text: root.editTaskCompleted ? root.tFunc("当前状态：已完成", "Status: Completed") : root.tFunc("当前状态：未完成", "Status: Incomplete")
-                    color: root.editTaskCompleted ? (root.homeDarkMode ? "#bbf7d0" : "#166534") : (root.homeDarkMode ? "#fed7aa" : "#9a3412")
-                    font.pixelSize: Math.max(12, root.detailFontSize - 6)
-                    font.bold: true
-                }
-
-                Item { Layout.fillWidth: true }
-            }
-
-            Label {
-                Layout.fillWidth: true
-                text: root.editTaskCompleted ? root.tFunc("任务已完成，可随时切回未完成状态。", "This task is completed. You can switch it back anytime.") : root.tFunc("任务仍在进行中，完成后可切换状态。", "This task is still in progress. Mark it complete when finished.")
-                color: root.detailHintTextColor
-                wrapMode: Text.WordWrap
-                font.pixelSize: Math.max(11, root.detailFontSize - 8)
-                bottomPadding: 6
-            }
-
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 6
-
-                Item { Layout.fillWidth: true }
-
-                Button {
-                    text: root.editTaskCompleted ? root.tFunc("设为未完成", "Mark incomplete") : root.tFunc("设为完成", "Mark complete")
-                    implicitWidth: 126
-                    implicitHeight: 36
-                    onClicked: root.completedEdited(!root.editTaskCompleted)
-                }
-            }
-        }
-    }
-
-    Rectangle {
-        Layout.fillWidth: true
-        Layout.minimumHeight: 180
-        implicitHeight: Math.max(180, checklistSection.implicitHeight + 8)
+        Layout.minimumHeight: 160
+        implicitHeight: Math.max(160, checklistSection.implicitHeight + 4)
         visible: !root.contentIsImageFunc(root.editTaskContent) && !root.contentIsFileFunc(root.editTaskContent)
         radius: 12
         color: root.homeDarkMode ? "#313b47" : "#fbfdff"
         border.color: root.detailBorderColor
         border.width: 1
-
         ColumnLayout {
             id: checklistSection
             anchors.fill: parent
-            anchors.margins: 12
-            spacing: 8
-
+            anchors.margins: 8
+            spacing: 4
             Repeater {
                 model: root.checklistItemsFromContent(root.editTaskContent)
-
                 delegate: Rectangle {
                     property var itemData: modelData
-
                     Layout.fillWidth: true
-                    implicitHeight: 44
-                    radius: 0
+                    implicitHeight: 38
                     color: "transparent"
-
                     ColumnLayout {
                         anchors.fill: parent
                         spacing: 0
-
                         RowLayout {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: 40
+                            Layout.preferredHeight: 34
                             spacing: 10
-
                             Button {
-                                implicitWidth: 24
-                                implicitHeight: 24
-                                Layout.alignment: Qt.AlignVCenter
-                                onClicked: root.toggleChecklistItem(index)
-
-                                background: Rectangle {
-                                    radius: 12
-                                    color: "transparent"
-                                    border.color: itemData.completed ? "#94a3b8" : root.detailHintTextColor
-                                    border.width: 2
+                                implicitWidth: 24; implicitHeight: 24
+                                onClicked: {
+                                    root.toggleChecklistItem(index)
+                                    root.editingFinished()
                                 }
-
-                                contentItem: Text {
-                                    text: itemData.completed ? "•" : ""
-                                    color: root.detailHintTextColor
-                                    font.pixelSize: 11
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                }
+                                background: Rectangle { radius: 12; color: "transparent"; border.color: itemData.completed ? "#94a3b8" : root.detailHintTextColor; border.width: 2 }
+                                contentItem: Text { text: itemData.completed ? "•" : ""; color: root.detailHintTextColor; font.pixelSize: 11; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
                             }
-
                             TextField {
+                                id: checklistInput
                                 Layout.fillWidth: true
                                 text: itemData.text
+                                placeholderText: root.tFunc("下一步", "Next step")
                                 color: itemData.completed ? root.detailHintTextColor : root.detailTextColor
                                 font.pixelSize: Math.max(12, root.detailFontSize - 6)
                                 font.strikeout: itemData.completed
                                 background: null
-                                leftPadding: 0
-                                rightPadding: 0
-                                topPadding: 0
-                                bottomPadding: 0
+                                leftPadding: 0; rightPadding: 0; topPadding: 0; bottomPadding: 0
                                 selectByMouse: true
-                                onEditingFinished: root.updateChecklistItemText(index, text)
+                                Component.onCompleted: {
+                                    if (index === root.pendingFocusIndex) {
+                                        Qt.callLater(function() {
+                                            checklistInput.forceActiveFocus()
+                                            checklistInput.cursorPosition = checklistInput.text.length
+                                            root.pendingFocusIndex = -1
+                                        })
+                                    }
+                                }
+                                onAccepted: {
+                                    root.createChecklistItemAfter(index, text)
+                                    root.editingFinished()
+                                }
+                                onEditingFinished: {
+                                    root.updateChecklistItemText(index, text)
+                                    root.editingFinished()
+                                }
                             }
-
                             Button {
-                                text: "⋮"
-                                implicitWidth: 24
-                                implicitHeight: 24
-                                Layout.alignment: Qt.AlignVCenter
-                                onClicked: root.removeChecklistItem(index)
-
+                                text: "🗑"
+                                implicitWidth: 24; implicitHeight: 24
+                                hoverEnabled: true
+                                ToolTip.visible: hovered
+                                ToolTip.delay: 200
+                                ToolTip.text: root.tFunc("删除该行", "Delete this row")
+                                onClicked: {
+                                    root.removeChecklistItem(index)
+                                    root.editingFinished()
+                                }
                                 background: Rectangle {
                                     radius: 12
-                                    color: "transparent"
+                                    color: parent.hovered ? (root.homeDarkMode ? "#3f1d24" : "#fee2e2") : "transparent"
                                 }
-
                                 contentItem: Text {
                                     text: parent.text
-                                    color: root.detailHintTextColor
-                                    font.pixelSize: 16
+                                    color: parent.hovered ? "#ef4444" : root.detailHintTextColor
+                                    font.pixelSize: 13
+                                    font.bold: parent.hovered
                                     horizontalAlignment: Text.AlignHCenter
                                     verticalAlignment: Text.AlignVCenter
                                 }
                             }
                         }
-
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 1
-                            color: root.detailBorderColor
-                            opacity: index < root.checklistItemsFromContent(root.editTaskContent).length - 1 ? 1 : 0
-                        }
+                        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: root.detailBorderColor; opacity: index < root.checklistItemsFromContent(root.editTaskContent).length - 1 ? 1 : 0 }
                     }
                 }
             }
-
             Button {
                 Layout.fillWidth: true
                 text: root.tFunc("+ 下一步", "+ Next step")
                 flat: true
                 implicitHeight: 32
-                onClicked: root.appendChecklistItem()
-
-                contentItem: Text {
-                    text: parent.text
-                    color: root.detailHintTextColor
-                    font.pixelSize: Math.max(12, root.detailFontSize - 6)
-                    horizontalAlignment: Text.AlignLeft
-                    verticalAlignment: Text.AlignVCenter
+                onClicked: {
+                    root.appendChecklistItem()
+                    root.editingFinished()
                 }
-
-                background: Rectangle {
-                    color: "transparent"
-                }
+                contentItem: Text { text: parent.text; color: root.detailHintTextColor; font.pixelSize: Math.max(12, root.detailFontSize - 6); horizontalAlignment: Text.AlignLeft; verticalAlignment: Text.AlignVCenter }
+                background: Rectangle { color: "transparent" }
             }
         }
     }
 }
-

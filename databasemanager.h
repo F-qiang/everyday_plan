@@ -37,6 +37,7 @@ public:
                                int priority = 1, int categoryId = 0, bool completed = false);
     Q_INVOKABLE bool updateTask(int taskId, const QVariantMap &data);
     Q_INVOKABLE bool markTaskForToday(int taskId);
+    Q_INVOKABLE bool clearTaskFromToday(int taskId);
     Q_INVOKABLE bool updateTaskProgress(int taskId, int progress);
     Q_INVOKABLE bool deleteTask(int taskId);
     Q_INVOKABLE QVariantList getTasksByUser(int userId, const QString &startDate = QString(), const QString &endDate = QString());

@@ -36,7 +36,7 @@ bool DatabaseManager::createTables()
     query.exec("CREATE TABLE IF NOT EXISTS Users (user_id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT UNIQUE NOT NULL, nickname TEXT, avatar BLOB, created_at TEXT DEFAULT CURRENT_TIMESTAMP)");
     query.exec("CREATE TABLE IF NOT EXISTS UserSettings (user_id INTEGER PRIMARY KEY, settings_json TEXT NOT NULL DEFAULT '{}', updated_at TEXT DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE)");
     query.exec("CREATE TABLE IF NOT EXISTS Categories (category_id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, name TEXT NOT NULL, color TEXT DEFAULT '#3498db', icon TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE)");
-    query.exec("CREATE TABLE IF NOT EXISTS Tasks (task_id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, title TEXT NOT NULL, description TEXT, content TEXT, start_date TEXT NOT NULL, end_date TEXT, today_until TEXT, progress INTEGER DEFAULT 0, priority INTEGER DEFAULT 1, status INTEGER DEFAULT 0, category_id INTEGER, created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE, FOREIGN KEY (category_id) REFERENCES Categories(category_id) ON DELETE SET NULL)");
+    query.exec("CREATE TABLE IF NOT EXISTS Tasks (task_id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, title TEXT NOT NULL, description TEXT, content TEXT, start_date TEXT NOT NULL, end_date TEXT, today_until TEXT, today_hidden_until TEXT, progress INTEGER DEFAULT 0, priority INTEGER DEFAULT 1, status INTEGER DEFAULT 0, category_id INTEGER, created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE, FOREIGN KEY (category_id) REFERENCES Categories(category_id) ON DELETE SET NULL)");
     query.exec("CREATE TABLE IF NOT EXISTS VerificationCodes (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL, code TEXT NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP, expires_at TEXT NOT NULL)");
     query.exec("CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON Tasks(user_id)");
     query.exec("CREATE INDEX IF NOT EXISTS idx_tasks_dates ON Tasks(start_date, end_date)");
@@ -78,6 +78,14 @@ bool DatabaseManager::migrateFromOldVersion()
         }
     }
 
+    if (!taskColumnExists("today_hidden_until")) {
+        QSqlQuery alterQuery(m_db);
+        if (!alterQuery.exec("ALTER TABLE Tasks ADD COLUMN today_hidden_until TEXT")) {
+            qDebug() << "[DatabaseManager] 添加 Tasks.today_hidden_until 失败:" << alterQuery.lastError().text();
+            return false;
+        }
+    }
+
     QSqlQuery syncQuery(m_db);
     if (!syncQuery.exec("UPDATE Tasks SET content = COALESCE(content, description, '') WHERE content IS NULL OR content = ''")) {
         qDebug() << "[DatabaseManager] 同步 Tasks.content 失败:" << syncQuery.lastError().text();
@@ -93,6 +101,12 @@ bool DatabaseManager::migrateFromOldVersion()
     QSqlQuery cleanupQuery(m_db);
     if (!cleanupQuery.exec("UPDATE Tasks SET today_until = NULL WHERE today_until IS NOT NULL AND today_until != '' AND datetime(today_until) <= datetime('now', '+8 hours')")) {
         qDebug() << "[DatabaseManager] 清理 Tasks.today_until 失败:" << cleanupQuery.lastError().text();
+        return false;
+    }
+
+    QSqlQuery hiddenCleanupQuery(m_db);
+    if (!hiddenCleanupQuery.exec("UPDATE Tasks SET today_hidden_until = NULL WHERE today_hidden_until IS NOT NULL AND today_hidden_until != '' AND datetime(today_hidden_until) <= datetime('now', '+8 hours')")) {
+        qDebug() << "[DatabaseManager] 清理 Tasks.today_hidden_until 失败:" << hiddenCleanupQuery.lastError().text();
         return false;
     }
 
@@ -290,6 +304,8 @@ bool DatabaseManager::updateTask(int taskId, const QVariantMap &data)
     if (data.contains("priority")) { updates << "priority = ?"; values << data["priority"]; }
     if (data.contains("status")) { updates << "status = ?"; values << data["status"]; }
     if (data.contains("completed")) { updates << "status = ?"; values << (data["completed"].toBool() ? 1 : 0); }
+    if (data.contains("todayUntil")) { updates << "today_until = ?"; values << (data["todayUntil"].toString().trimmed().isEmpty() ? QVariant() : data["todayUntil"]); }
+    if (data.contains("todayHiddenUntil")) { updates << "today_hidden_until = ?"; values << (data["todayHiddenUntil"].toString().trimmed().isEmpty() ? QVariant() : data["todayHiddenUntil"]); }
     if (data.contains("categoryId")) { updates << "category_id = ?"; values << (data["categoryId"].toInt() > 0 ? data["categoryId"] : QVariant()); }
     if (updates.isEmpty()) return true;
     updates << "updated_at = CURRENT_TIMESTAMP";
@@ -303,7 +319,15 @@ bool DatabaseManager::updateTask(int taskId, const QVariantMap &data)
 bool DatabaseManager::markTaskForToday(int taskId)
 {
     QSqlQuery query(m_db);
-    query.prepare("UPDATE Tasks SET today_until = datetime(date('now', '+8 hours', '+1 day') || ' 00:00:00', '-8 hours'), updated_at = CURRENT_TIMESTAMP WHERE task_id = ?");
+    query.prepare("UPDATE Tasks SET today_until = datetime(date('now', '+8 hours', '+1 day') || ' 00:00:00', '-8 hours'), today_hidden_until = NULL, updated_at = CURRENT_TIMESTAMP WHERE task_id = ?");
+    query.addBindValue(taskId);
+    return query.exec();
+}
+
+bool DatabaseManager::clearTaskFromToday(int taskId)
+{
+    QSqlQuery query(m_db);
+    query.prepare("UPDATE Tasks SET today_until = NULL, today_hidden_until = datetime(date('now', '+8 hours', '+1 day') || ' 00:00:00', '-8 hours'), updated_at = CURRENT_TIMESTAMP WHERE task_id = ?");
     query.addBindValue(taskId);
     return query.exec();
 }

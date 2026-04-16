@@ -59,21 +59,29 @@ Item {
         }
     }
 
-    function markTaskForToday(taskId) {
+    function markTaskForToday(taskId, selected) {
         if (taskId < 0) {
             return
         }
 
-        const ok = DatabaseManager.markTaskForToday(taskId)
-        if (ok) {
-            mainWindow.showTodayTasks()
+        const ok = selected ? DatabaseManager.markTaskForToday(taskId) : DatabaseManager.clearTaskFromToday(taskId)
+        if (!ok) {
+            return
+        }
+
+        mainWindow.refreshCurrentView()
+        AbstractContentsModel.loadAllFromDatabase(mainWindow.databasePath, mainWindow.currentPageType === mainWindow.pageToday, mainWindow.currentPageType === mainWindow.pageCompleted)
+
+        if (selected && mainWindow.currentPageType !== mainWindow.pageToday) {
             openTaskById(taskId)
         }
     }
 
     function finishTaskCompletion(taskId, completed) {
         const ok = DatabaseManager.updateTask(taskId, {
-            "completed": completed
+            "completed": completed,
+            "todayUntil": completed ? "" : undefined,
+            "todayHiddenUntil": completed ? "" : undefined
         })
         if (!ok) {
             completionAnimating = false
@@ -81,10 +89,21 @@ Item {
             return
         }
 
-        mainWindow.refreshCurrentView()
-        AbstractContentsModel.loadAllFromDatabase(mainWindow.databasePath, mainWindow.currentPageType === mainWindow.pageToday, mainWindow.currentPageType === mainWindow.pageCompleted)
+        if (mainWindow.selectedTaskId === taskId && completed) {
+            mainWindow.resetDetail()
+        }
+
         completionAnimating = false
         pendingCompletedTaskId = -1
+
+        if (!completed && mainWindow.currentPageType === mainWindow.pageCompleted) {
+            mainWindow.showAllTasks()
+            openTaskById(taskId)
+            return
+        }
+
+        mainWindow.refreshCurrentView()
+        AbstractContentsModel.loadAllFromDatabase(mainWindow.databasePath, mainWindow.currentPageType === mainWindow.pageToday, mainWindow.currentPageType === mainWindow.pageCompleted)
 
         if (!completed) {
             openTaskById(taskId)
@@ -184,7 +203,8 @@ Item {
             fontScale: mainWindow.middleCardFontSize
             categoryName: model.categoryName
             categoryColor: model.categoryColor
-            todaySelected: mainWindow.currentPageType === mainWindow.pageToday
+            completed: model.completed
+            todaySelected: model.todaySelected
 
             onDetailedRequested: {
                 root.itemSelected(
@@ -209,8 +229,8 @@ Item {
                 root.saveTaskOutline(model.index_num, newOutline)
             }
 
-            onMarkTodayRequested: {
-                root.markTaskForToday(model.index_num)
+            onMarkTodayRequested: (selected) => {
+                root.markTaskForToday(model.index_num, selected)
             }
 
             onCompletedToggled: (completed) => {

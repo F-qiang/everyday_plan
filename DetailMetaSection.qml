@@ -6,6 +6,7 @@ ColumnLayout {
     id: root
 
     property bool visibleSection: true
+    property bool showTitleEditor: true
     property bool homeDarkMode: true
     property int detailFontSize: 20
     property string editTaskTitle: ""
@@ -37,6 +38,7 @@ ColumnLayout {
     property var formatDateTimeFunc
     property var openDateTimeEditorFunc
     signal titleEdited(string value)
+    signal titleEditFinished()
     signal startDateEdited(string value)
     signal dueDateEdited(string value)
     signal priorityEdited(int value)
@@ -50,7 +52,7 @@ ColumnLayout {
     readonly property bool scheduleVisible: root.showScheduleSection && (root.showDetailStartDate || root.showDetailDueDate || root.showDetailPriority)
 
     TextField {
-        visible: !root.visibleSection
+        visible: root.visibleSection && root.showTitleEditor
         Layout.fillWidth: true
         implicitHeight: 42
         text: root.editTaskTitle
@@ -62,6 +64,7 @@ ColumnLayout {
         selectedTextColor: root.detailOnAccentColor
         selectionColor: root.detailAccentColor
         onTextChanged: root.titleEdited(text)
+        onEditingFinished: root.titleEditFinished()
 
         background: Rectangle {
             radius: 8
@@ -145,6 +148,7 @@ ColumnLayout {
                 }
             }
         }
+    }
 
     ColumnLayout {
         visible: root.scheduleVisible
@@ -296,6 +300,4 @@ ColumnLayout {
             }
         }
     }
-
-}
 }

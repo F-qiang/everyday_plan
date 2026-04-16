@@ -13,8 +13,29 @@ Item {
     property int detailFontSize: 20
     property color detailTextColor: "#0f172a"
     property color compactTitleColor: "#111827"
-    signal saveClicked()
+    property bool editingTitle: false
+    signal titleEdited(string value)
+    signal titleEditFinished()
     signal deleteClicked()
+
+    function beginTitleEdit() {
+        if (root.compactDetailMode || !root.showActions) {
+            return
+        }
+        root.editingTitle = true
+        Qt.callLater(function() {
+            titleInput.forceActiveFocus()
+            titleInput.selectAll()
+        })
+    }
+
+    function finishTitleEdit() {
+        if (!root.editingTitle) {
+            return
+        }
+        root.editingTitle = false
+        root.titleEditFinished()
+    }
 
     implicitHeight: root.showActions ? Math.max(40, detailActionRow.implicitHeight) : 34
 
@@ -22,15 +43,51 @@ Item {
         anchors.fill: parent
         spacing: 8
 
-        Label {
-            visible: !root.compactDetailMode
+        Item {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
-            text: root.titleText
-            font.pixelSize: root.showActions ? root.detailFontSize : Math.max(18, root.detailFontSize - 1)
-            font.bold: true
-            color: root.detailTextColor
-            elide: Text.ElideRight
+            implicitHeight: Math.max(40, titleLabel.implicitHeight)
+            visible: !root.compactDetailMode
+
+            Label {
+                id: titleLabel
+                anchors.fill: parent
+                visible: !root.editingTitle
+                verticalAlignment: Text.AlignVCenter
+                text: root.titleText
+                font.pixelSize: root.showActions ? root.detailFontSize : Math.max(18, root.detailFontSize - 1)
+                font.bold: true
+                color: root.detailTextColor
+                elide: Text.ElideRight
+            }
+
+            TextField {
+                id: titleInput
+                anchors.fill: parent
+                visible: root.editingTitle
+                text: root.titleText
+                font.pixelSize: root.showActions ? root.detailFontSize : Math.max(18, root.detailFontSize - 1)
+                font.bold: true
+                color: root.detailTextColor
+                selectByMouse: true
+                selectedTextColor: root.homeDarkMode ? "#0f172a" : "#ffffff"
+                selectionColor: root.homeDarkMode ? "#bfdbfe" : "#2563eb"
+                background: Rectangle {
+                    radius: 8
+                    color: root.homeDarkMode ? "#ffffff" : "#ffffff"
+                    border.color: root.homeDarkMode ? "#93c5fd" : "#2563eb"
+                    border.width: 2
+                }
+                onTextChanged: root.titleEdited(text)
+                onEditingFinished: root.finishTitleEdit()
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                enabled: !root.editingTitle && root.showActions
+                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                onClicked: root.beginTitleEdit()
+            }
         }
 
         Item { Layout.fillWidth: true; visible: !root.showActions }
@@ -44,29 +101,6 @@ Item {
                 id: detailActionRow
                 anchors.right: parent.right
                 spacing: 8
-
-                Button {
-                    text: qsTr("保存")
-                    implicitWidth: 92
-                    implicitHeight: 36
-                    onClicked: root.saveClicked()
-
-                    background: Rectangle {
-                        radius: 18
-                        color: parent.down ? Qt.darker("#2563eb", 1.14) : "#2563eb"
-                        border.color: parent.hovered ? Qt.lighter("#2563eb", 1.18) : "transparent"
-                        border.width: parent.hovered ? 1 : 0
-                    }
-
-                    contentItem: Text {
-                        text: parent.text
-                        color: "#ffffff"
-                        font.pixelSize: Math.max(12, root.detailFontSize - 6)
-                        font.bold: true
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
 
                 Button {
                     text: qsTr("删除")

@@ -17,17 +17,17 @@ Item {
     readonly property int actionBarHeight: 74
     signal submitRequested(string title, string description, string content, string startDate, string endDate, int priority, int categoryId, bool completed)
 
-    readonly property color bg: homeDarkMode ? "#2f343c" : "#f6efe2"
-    readonly property color card: homeDarkMode ? "#3a4049" : "#fffaf1"
-    readonly property color panel: homeDarkMode ? "#454c56" : "#fffdf7"
-    readonly property color border: homeDarkMode ? "#4b5563" : "#e5d6ba"
-    readonly property color strongBorder: homeDarkMode ? "#60a5fa" : "#d97706"
-    readonly property color titleC: homeDarkMode ? "#f8fafc" : "#3f3120"
-    readonly property color subC: homeDarkMode ? "#d1d5db" : "#8b6b42"
-    readonly property color heroA: homeDarkMode ? "#374151" : "#fde7c7"
-    readonly property color heroB: homeDarkMode ? "#2f343c" : "#fff7ea"
-    readonly property color inputBg: homeDarkMode ? "#2b3138" : "#fffdfa"
-    readonly property color accent: homeDarkMode ? "#93c5fd" : "#c67a1a"
+    readonly property color bg: homeDarkMode ? "#343943" : "#f7f4ee"
+    readonly property color card: homeDarkMode ? "#3a4049" : "#fffdf8"
+    readonly property color panel: homeDarkMode ? "#313b47" : "#fbfdff"
+    readonly property color border: homeDarkMode ? "#4b5563" : "#d8dee8"
+    readonly property color strongBorder: homeDarkMode ? "#60a5fa" : "#2563eb"
+    readonly property color titleC: homeDarkMode ? "#f8fafc" : "#0f172a"
+    readonly property color subC: homeDarkMode ? "#cbd5e1" : "#64748b"
+    readonly property color heroA: homeDarkMode ? "#334155" : "#e8f0fe"
+    readonly property color heroB: homeDarkMode ? "#2f343c" : "#f8fbff"
+    readonly property color inputBg: homeDarkMode ? "#2b3138" : "#ffffff"
+    readonly property color accent: homeDarkMode ? "#93c5fd" : "#2563eb"
 
     function t(zh, en) {
         return uiLanguage === "en" ? en : zh
@@ -101,6 +101,17 @@ Item {
         color: root.titleC
         font.pixelSize: 14
         font.bold: true
+    }
+
+    component SectionHeader: RowLayout {
+        spacing: 6
+
+        Rectangle {
+            width: 3
+            height: 24
+            radius: 1.5
+            color: root.accent
+        }
     }
 
     component HintLabel: Label {
@@ -282,7 +293,14 @@ Item {
                                     anchors.margins: 16
                                     spacing: 8
 
-                                    SectionLabel { text: root.t("任务标题", "Task title") }
+                                    SectionHeader {
+                                        Label {
+                                            text: root.t("任务标题", "Task title")
+                                            color: root.titleC
+                                            font.pixelSize: 14
+                                            font.bold: true
+                                        }
+                                    }
 
                                     FormField {
                                         id: taskTitleInput
@@ -301,8 +319,15 @@ Item {
                                     anchors.margins: 16
                                     spacing: 8
 
-                                    SectionLabel { text: root.t("任务描述", "Description") }
-                                    HintLabel { text: root.t("写下目标、备注或执行步骤，详情面板会按原样展示。", "Write the goal, notes, or steps. The detail panel will display it as entered.") }
+                                    SectionHeader {
+                                        Label {
+                                            text: root.t("概要", "Summary")
+                                            color: root.titleC
+                                            font.pixelSize: 14
+                                            font.bold: true
+                                        }
+                                    }
+                                    HintLabel { text: root.t("像详情页一样先写摘要说明，正文为空时也方便后续补充。", "Start with a summary just like the detail panel, so the body can be filled later if needed.") }
 
                                     TextArea {
                                         id: taskDescInput
@@ -333,7 +358,14 @@ Item {
 
                                     RowLayout {
                                         Layout.fillWidth: true
-                                        SectionLabel { text: root.t("内容 / 附件", "Content / attachment") }
+                                        SectionHeader {
+                                            Label {
+                                                text: root.t("内容 / 附件", "Content / attachment")
+                                                color: root.titleC
+                                                font.pixelSize: 14
+                                                font.bold: true
+                                            }
+                                        }
                                         Item { Layout.fillWidth: true }
                                         CheckBox {
                                             id: completedInput
@@ -411,7 +443,14 @@ Item {
 
                                     RowLayout {
                                         Layout.fillWidth: true
-                                        SectionLabel { text: root.t("时间设置", "Time settings") }
+                                        SectionHeader {
+                                            Label {
+                                                text: root.t("时间设置", "Time settings")
+                                                color: root.titleC
+                                                font.pixelSize: 14
+                                                font.bold: true
+                                            }
+                                        }
                                         Item { Layout.fillWidth: true }
                                         HintLabel { text: root.t("格式：yyyy-MM-dd HH:mm", "Format: yyyy-MM-dd HH:mm") }
                                     }
@@ -556,7 +595,14 @@ Item {
                                         anchors.margins: 16
                                         spacing: 8
 
-                                        SectionLabel { text: root.t("优先级", "Priority") }
+                                        SectionHeader {
+                                            Label {
+                                                text: root.t("优先级", "Priority")
+                                                color: root.titleC
+                                                font.pixelSize: 14
+                                                font.bold: true
+                                            }
+                                        }
 
                                         ComboBox {
                                             id: priorityInput
@@ -577,7 +623,14 @@ Item {
                                         anchors.margins: 16
                                         spacing: 8
 
-                                        SectionLabel { text: root.t("分类", "Category") }
+                                        SectionHeader {
+                                            Label {
+                                                text: root.t("分类", "Category")
+                                                color: root.titleC
+                                                font.pixelSize: 14
+                                                font.bold: true
+                                            }
+                                        }
 
                                         ComboBox {
                                             id: categoryInput
@@ -609,7 +662,14 @@ Item {
                                         anchors.margins: 16
                                         spacing: 8
 
-                                        SectionLabel { text: root.t("优先级", "Priority") }
+                                        SectionHeader {
+                                            Label {
+                                                text: root.t("优先级", "Priority")
+                                                color: root.titleC
+                                                font.pixelSize: 14
+                                                font.bold: true
+                                            }
+                                        }
 
                                         ComboBox {
                                             Layout.fillWidth: true
@@ -630,7 +690,14 @@ Item {
                                         anchors.margins: 16
                                         spacing: 8
 
-                                        SectionLabel { text: root.t("分类", "Category") }
+                                        SectionHeader {
+                                            Label {
+                                                text: root.t("分类", "Category")
+                                                color: root.titleC
+                                                font.pixelSize: 14
+                                                font.bold: true
+                                            }
+                                        }
 
                                         ComboBox {
                                             Layout.fillWidth: true

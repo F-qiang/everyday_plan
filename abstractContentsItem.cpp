@@ -15,6 +15,7 @@ AbstractContentsItem::AbstractContentsItem(QObject *parent)
     , m_categoryName("")
     , m_categoryColor("#94a3b8")
     , m_completed(false)
+    , m_todaySelected(false)
 {
 }
 
@@ -46,3 +47,5 @@ QString AbstractContentsItem::categoryColor() const { return m_categoryColor; }
 void AbstractContentsItem::setCategoryColor(const QString &categoryColor) { if (m_categoryColor != categoryColor) { m_categoryColor = categoryColor; emit categoryColorChanged(); } }
 bool AbstractContentsItem::completed() const { return m_completed; }
 void AbstractContentsItem::setCompleted(bool completed) { if (m_completed != completed) { m_completed = completed; emit completedChanged(); } }
+bool AbstractContentsItem::todaySelected() const { return m_todaySelected; }
+void AbstractContentsItem::setTodaySelected(bool todaySelected) { if (m_todaySelected != todaySelected) { m_todaySelected = todaySelected; emit todaySelectedChanged(); } }

@@ -594,14 +594,61 @@ Window {
     }
 
     function showNewTaskForm() {
+        if (!AuthManager.isLoggedIn) {
+            openLoginWindow()
+            return
+        }
+
+        const draftTitle = t("未命名任务", "Untitled Task")
+        const draftStartDate = Qt.formatDateTime(new Date(), "yyyy-MM-dd HH:mm")
+        const createdTaskId = DatabaseManager.createTask(
+            AuthManager.currentUserId,
+            draftTitle,
+            "",
+            "",
+            draftStartDate,
+            "",
+            1,
+            0,
+            false
+        )
+
+        if (createdTaskId <= 0) {
+            return
+        }
+
+        currentPageType = pageAllTasks
         settingsVisible = false
         detailVisible = false
         newCategoryVisible = false
-        ensureListPageForEditor()
-        newTaskVisible = true
+        newTaskVisible = false
         middleCollapsed = false
+        clearCategoryFilter()
         loadCategories()
-        newTaskDialog.resetForm()
+        AbstractContentsModel.loadAllFromDatabase(databasePath, false, false)
+
+        for (let i = 0; i < AbstractContentsModel.rowCount(); ++i) {
+            const task = AbstractContentsModel.get(i)
+            if (task.index_num === createdTaskId) {
+                openTaskDetail(
+                    task.index_num,
+                    task.title,
+                    task.outline,
+                    task.content,
+                    task.time,
+                    task.startDate,
+                    task.author,
+                    task.created_at,
+                    task.dueDate,
+                    task.priority,
+                    task.categoryId,
+                    task.categoryName,
+                    task.categoryColor,
+                    task.completed
+                )
+                break
+            }
+        }
     }
 
     function showNewCategoryForm() {
@@ -670,6 +717,8 @@ Window {
         const categoryId = editTaskCategoryIndex > 0 && categoryList.length >= editTaskCategoryIndex ? categoryList[editTaskCategoryIndex - 1].categoryId : 0
         const contentValue = editTaskContent.trim()
         const outlineValue = editTaskOutline.trim()
+        const targetTaskId = selectedTaskId
+        const movedOutOfCompleted = currentPageType === pageCompleted && !editTaskCompleted
         const ok = DatabaseManager.updateTask(selectedTaskId, {
             "title": title,
             "description": outlineValue,
@@ -707,6 +756,33 @@ Window {
         if (!matched || categoryId === 0) {
             selectedTaskCategoryName = "未分类"
             selectedTaskCategoryColor = "#94a3b8"
+        }
+
+        if (movedOutOfCompleted) {
+            showAllTasks()
+            for (let i = 0; i < AbstractContentsModel.rowCount(); ++i) {
+                const task = AbstractContentsModel.get(i)
+                if (task.index_num === targetTaskId) {
+                    openTaskDetail(
+                        task.index_num,
+                        task.title,
+                        task.outline,
+                        task.content,
+                        task.time,
+                        task.startDate,
+                        task.author,
+                        task.created_at,
+                        task.dueDate,
+                        task.priority,
+                        task.categoryId,
+                        task.categoryName,
+                        task.categoryColor,
+                        task.completed
+                    )
+                    break
+                }
+            }
+            return
         }
 
         refreshCurrentView()
@@ -1394,7 +1470,8 @@ Window {
                             detailFontSize: mainWindow.detailFontSize
                             detailTextColor: mainWindow.detailTextColor
                             compactTitleColor: homeDarkMode ? "#f8fafc" : "#111827"
-                            onSaveClicked: mainWindow.saveSelectedTaskEdits()
+                            onTitleEdited: function(value) { mainWindow.editTaskTitle = value }
+                            onTitleEditFinished: mainWindow.saveSelectedTaskEdits()
                             onDeleteClicked: mainWindow.deleteSelectedTask()
                         }
 
@@ -1472,501 +1549,90 @@ Window {
                                         width: parent.width
                                         spacing: 6
 
-                                Label {
-                                    visible: false
-                                    text: settingsVisible ? t("界面设置已展开到主区域，可以直接调整主题、背景图和字体大小。", "Settings are expanded in the main area. You can directly adjust theme, background, and font sizes.") : t("从中间列表选择一个任务后，右侧会在这里展示完整详情。你可以直接编辑标题、概要与时间。", "Choose a task from the middle list and its full details will appear here. You can edit the title, summary, and time directly.")
-                                    wrapMode: Text.WordWrap
-                                    color: detailHintTextColor
-                                    font.pixelSize: detailFontSize - 2
-                                }
-
-                                EmptyDetailState {
-                                    visible: !detailVisible && !newTaskVisible
-                                    homeDarkMode: mainWindow.homeDarkMode
-                                    detailFontSize: mainWindow.detailFontSize
-                                    detailTextColor: mainWindow.detailTextColor
-                                    detailHintTextColor: mainWindow.detailHintTextColor
-                                    tFunc: mainWindow.t
-                                }
-
-                                DetailMetaSection {
-                                    visibleSection: detailVisible
-                                    homeDarkMode: mainWindow.homeDarkMode
-                                    detailFontSize: mainWindow.detailFontSize
-                                    editTaskTitle: mainWindow.editTaskTitle
-                                    selectedTaskCategoryColor: mainWindow.selectedTaskCategoryColor
-                                    selectedTaskCategoryName: mainWindow.selectedTaskCategoryName
-                                    selectedTaskAuthor: mainWindow.selectedTaskAuthor
-                                    selectedTaskCreatedAt: mainWindow.selectedTaskCreatedAt
-                                    editTaskStartDate: mainWindow.editTaskStartDate
-                                    editTaskDueDate: mainWindow.editTaskDueDate
-                                    editTaskPriority: mainWindow.editTaskPriority
-                                    editTaskCategoryIndex: mainWindow.editTaskCategoryIndex
-                                    categoryList: mainWindow.categoryList
-                                    showIdentitySection: true
-                                    showScheduleSection: false
-                                    showDetailAuthor: mainWindow.showDetailAuthor
-                                    showDetailCreatedDate: mainWindow.showDetailCreatedDate
-                                    showDetailStartDate: mainWindow.showDetailStartDate
-                                    showDetailDueDate: mainWindow.showDetailDueDate
-                                    showDetailPriority: mainWindow.showDetailPriority
-                                    detailTextColor: mainWindow.detailTextColor
-                                    detailMutedTextColor: mainWindow.detailMutedTextColor
-                                    detailHintTextColor: mainWindow.detailHintTextColor
-                                    detailBorderColor: mainWindow.detailBorderColor
-                                    detailElevatedColor: mainWindow.detailElevatedColor
-                                    detailAccentColor: mainWindow.detailAccentColor
-                                    detailOnAccentColor: mainWindow.detailOnAccentColor
-                                    detailTonalColor: mainWindow.detailTonalColor
-                                    tFunc: mainWindow.t
-                                    formatDateTimeFunc: mainWindow.formatDisplayDateTime
-                                    openDateTimeEditorFunc: mainWindow.openDateTimeEditor
-                                    onTitleEdited: function(value) { mainWindow.editTaskTitle = value }
-                                    onStartDateEdited: function(value) { mainWindow.editTaskStartDate = value }
-                                    onDueDateEdited: function(value) { mainWindow.editTaskDueDate = value }
-                                    onPriorityEdited: function(value) { mainWindow.editTaskPriority = value }
-                                    onCategoryIndexEdited: function(value) { mainWindow.editTaskCategoryIndex = value }
-                                }
-
-                                DetailEditingSection {
-                                    visibleSection: detailVisible
-                                    homeDarkMode: mainWindow.homeDarkMode
-                                    detailFontSize: mainWindow.detailFontSize
-                                    editTaskOutline: mainWindow.editTaskOutline
-                                    editTaskContent: mainWindow.editTaskContent
-                                    editTaskCompleted: mainWindow.editTaskCompleted
-                                    detailTextColor: mainWindow.detailTextColor
-                                    detailHintTextColor: mainWindow.detailHintTextColor
-                                    detailMutedTextColor: mainWindow.detailMutedTextColor
-                                    detailBorderColor: mainWindow.detailBorderColor
-                                    detailAccentColor: mainWindow.detailAccentColor
-                                    detailOnAccentColor: mainWindow.detailOnAccentColor
-                                    tFunc: mainWindow.t
-                                    contentIsImageFunc: mainWindow.contentIsImage
-                                    contentIsFileFunc: mainWindow.contentIsFile
-                                    onOutlineEdited: function(value) { mainWindow.editTaskOutline = value }
-                                    onContentEdited: function(value) { mainWindow.editTaskContent = value }
-                                    onCompletedEdited: function(value) { mainWindow.editTaskCompleted = value }
-                                }
-
-                                Label {
-                                    visible: false
-                                    text: selectedTaskTime === "" ? "" : "时间标签：" + mainWindow.formatDisplayDateTime(selectedTaskTime)
-                                    color: homeDarkMode ? "#64748b" : "#8b6b42"
-                                    font.pixelSize: Math.max(12, detailFontSize - 7)
-                                }
-
-                                ColumnLayout {
-                                    visible: detailVisible
-                                    Layout.fillWidth: true
-                                    spacing: 14
-
-                                        ColumnLayout {
-                                            width: parent.width
-                                            spacing: 8
-
-                                            ColumnLayout {
-                                                Layout.fillWidth: true
-                                                spacing: 6
-
-                                                RowLayout {
-                                                    Layout.fillWidth: true
-                                                    spacing: 10
-
-                                                    Label {
-                                                        text: t("附件", "Attachment")
-                                                        color: detailTextColor
-                                                        font.pixelSize: Math.max(13, detailFontSize - 5)
-                                                        font.bold: true
-                                                    }
-
-                                                    Rectangle {
-                                                        width: 8
-                                                        height: 8
-                                                        radius: 4
-                                                        color: editTaskContent.trim() === "" ? (homeDarkMode ? "#64748b" : "#94a3b8") : detailAccentColor
-                                                        Layout.alignment: Qt.AlignVCenter
-                                                    }
-
-                                                    Label {
-                                                        Layout.fillWidth: true
-                                                        text: mainWindow.contentIsFile(editTaskContent) || mainWindow.contentIsImage(editTaskContent) ? t("已选择文件", "File selected") : t("未选择附件", "No attachment selected")
-                                                        color: detailHintTextColor
-                                                        font.pixelSize: Math.max(11, detailFontSize - 8)
-                                                        elide: Text.ElideRight
-                                                    }
-                                                }
-
-                                                Label {
-                                                    Layout.fillWidth: true
-                                                    text: t("可添加文件或图片，附件会显示在下方卡片中。", "Add a file or image. The selected attachment will appear in the card below.")
-                                                    color: detailHintTextColor
-                                                    font.pixelSize: Math.max(11, detailFontSize - 8)
-                                                    wrapMode: Text.WordWrap
-                                                }
-                                            }
-
-                                            Flow {
-                                                width: parent.width
-                                                spacing: 8
-
-                                                DetailActionButton {
-                                                    text: "选择附件文件"
-                                                    implicitWidth: 116
-                                                    onClicked: detailAttachmentDialog.open()
-                                                }
-
-                                                DetailActionButton {
-                                                    text: "清空附件"
-                                                    implicitWidth: 92
-                                                    enabled: editTaskContent.trim() !== ""
-                                                    onClicked: editTaskContent = ""
-                                                }
-                                            }
-
-                                            Item {
-                                                width: 1
-                                                height: 2
-                                            }
-
-                                            DetailCard {
-                                                id: detailAttachmentSummaryCard
-                                                property bool attachmentPressed: detailAttachmentTapHandler.pressed && editTaskContent.trim() === ""
-                                                width: parent.width
-                                                implicitHeight: editTaskContent.trim() === "" ? 72 : 52
-                                                radius: 12
-                                                color: editTaskContent.trim() === "" ? (attachmentPressed
-                                                         ? (homeDarkMode ? "#293443" : "#eef4fa")
-                                                         : (detailAttachmentHoverArea.containsMouse
-                                                            ? (homeDarkMode ? "#324050" : "#f2f7fc")
-                                                            : (homeDarkMode ? "#2d3643" : "#f7f9fc"))) : (homeDarkMode ? "#313d4b" : "#f8fbff")
-                                                border.color: editTaskContent.trim() === "" ? "transparent" : detailBorderColor
-                                                border.width: 1
-
-                                                HoverHandler {
-                                                    id: detailAttachmentHoverArea
-                                                }
-
-                                                TapHandler {
-                                                    id: detailAttachmentTapHandler
-                                                    enabled: editTaskContent.trim() === ""
-                                                    onTapped: detailAttachmentDialog.open()
-                                                }
-
-                                                Behavior on color {
-                                                    ColorAnimation { duration: 120 }
-                                                }
-
-                                                Rectangle {
-                                                    anchors.fill: parent
-                                                    radius: 12
-                                                    visible: editTaskContent.trim() === "" && detailAttachmentHoverArea.containsMouse
-                                                    color: homeDarkMode ? "#9ec5ff" : "#2563eb"
-                                                    opacity: attachmentPressed ? (homeDarkMode ? 0.03 : 0.022) : (homeDarkMode ? 0.045 : 0.032)
-
-                                                    Behavior on opacity {
-                                                        NumberAnimation { duration: 120 }
-                                                    }
-                                                }
-
-                                                Rectangle {
-                                                    anchors.fill: parent
-                                                    radius: 12
-                                                    color: "transparent"
-                                                    visible: editTaskContent.trim() === ""
-                                                    border.color: attachmentPressed
-                                                                  ? (homeDarkMode ? "#73869a" : "#bfcedc")
-                                                                  : (detailAttachmentHoverArea.containsMouse
-                                                                     ? (homeDarkMode ? "#7a8ca0" : "#c8d6e2")
-                                                                     : (homeDarkMode ? "#63758a" : "#d3dde8"))
-                                                    border.width: 1
-                                                    opacity: detailAttachmentHoverArea.containsMouse ? 0.95 : 1
-
-                                                    Behavior on border.color {
-                                                        ColorAnimation { duration: 120 }
-                                                    }
-                                                }
-
-                                                Canvas {
-                                                    anchors.fill: parent
-                                                    anchors.margins: 1
-                                                    visible: editTaskContent.trim() === ""
-
-                                                    onVisibleChanged: if (visible) requestPaint()
-                                                    Connections {
-                                                        target: detailAttachmentHoverArea
-                                                        function onHoveredChanged() {
-                                                            if (parent.visible) {
-                                                                parent.requestPaint()
-                                                            }
-                                                        }
-                                                    }
-
-                                                    onPaint: {
-                                                        const ctx = getContext("2d")
-                                                        ctx.reset()
-                                                        ctx.strokeStyle = attachmentPressed
-                                                                ? (homeDarkMode ? "#8598ab" : "#c7d4df")
-                                                                : (detailAttachmentHoverArea.containsMouse
-                                                                   ? (homeDarkMode ? "#7f91a5" : "#cedae5")
-                                                                   : (homeDarkMode ? "#6b7c90" : "#d7e0ea"))
-                                                        ctx.globalAlpha = attachmentPressed
-                                                                ? (homeDarkMode ? 0.58 : 0.84)
-                                                                : (detailAttachmentHoverArea.containsMouse
-                                                                   ? (homeDarkMode ? 0.72 : 0.92)
-                                                                   : (homeDarkMode ? 0.6 : 0.85))
-                                                        ctx.lineWidth = 1
-                                                        if (ctx.setLineDash) {
-                                                            ctx.setLineDash([4, 4])
-                                                        }
-                                                        const r = 11
-                                                        ctx.beginPath()
-                                                        ctx.moveTo(r, 0)
-                                                        ctx.lineTo(width - r, 0)
-                                                        ctx.quadraticCurveTo(width, 0, width, r)
-                                                        ctx.lineTo(width, height - r)
-                                                        ctx.quadraticCurveTo(width, height, width - r, height)
-                                                        ctx.lineTo(r, height)
-                                                        ctx.quadraticCurveTo(0, height, 0, height - r)
-                                                        ctx.lineTo(0, r)
-                                                        ctx.quadraticCurveTo(0, 0, r, 0)
-                                                        ctx.stroke()
-                                                    }
-                                                }
-
-                                                RowLayout {
-                                                    anchors.fill: parent
-                                                    anchors.leftMargin: 16
-                                                    anchors.rightMargin: 16
-                                                    spacing: 12
-
-                                                    Rectangle {
-                                                        width: editTaskContent.trim() === "" ? 24 : 8
-                                                        height: editTaskContent.trim() === "" ? 24 : 8
-                                                        radius: editTaskContent.trim() === "" ? 8 : 4
-                                                        color: "transparent"
-                                                        border.color: editTaskContent.trim() === "" ? (homeDarkMode ? "#708397" : "#cbd8e4") : "transparent"
-                                                        border.width: editTaskContent.trim() === "" ? 1 : 0
-                                                        opacity: editTaskContent.trim() === "" ? (homeDarkMode ? 0.78 : 0.9) : 1
-                                                        Layout.alignment: Qt.AlignVCenter
-
-                                                        Canvas {
-                                                            anchors.centerIn: parent
-                                                            width: 10
-                                                            height: 10
-                                                            visible: editTaskContent.trim() === ""
-
-                                                            onPaint: {
-                                                                const ctx = getContext("2d")
-                                                                ctx.reset()
-                                                                ctx.strokeStyle = homeDarkMode ? "#93a4b8" : "#94a3b8"
-                                                                ctx.globalAlpha = homeDarkMode ? 0.78 : 0.9
-                                                                ctx.lineWidth = 1
-                                                                ctx.beginPath()
-                                                                ctx.moveTo(width / 2, 1)
-                                                                ctx.lineTo(width / 2, height - 1)
-                                                                ctx.moveTo(1, height / 2)
-                                                                ctx.lineTo(width - 1, height / 2)
-                                                                ctx.stroke()
-                                                            }
-                                                        }
-                                                    }
-
-                                                    ColumnLayout {
-                                                        Layout.fillWidth: true
-                                                        spacing: 2
-                                                        Layout.alignment: Qt.AlignVCenter
-
-                                                        Label {
-                                                            Layout.fillWidth: true
-                                                            verticalAlignment: Text.AlignVCenter
-                                                            elide: Text.ElideMiddle
-                                                            color: editTaskContent.trim() === "" ? detailTextColor : detailHintTextColor
-                                                            text: editTaskContent.trim() === "" ? t("未选择附件", "No attachment selected") : mainWindow.selectedFileName(editTaskContent)
-                                                            font.pixelSize: Math.max(12, detailFontSize - 7)
-                                                            font.bold: editTaskContent.trim() !== ""
-                                                        }
-
-                                                        Label {
-                                                            Layout.fillWidth: true
-                                                            visible: editTaskContent.trim() === ""
-                                                            text: t("点击这里或使用上方按钮添加文件或图片", "Click here or use the buttons above to add a file or image")
-                                                            color: detailHintTextColor
-                                                            font.pixelSize: Math.max(10, detailFontSize - 9)
-                                                            wrapMode: Text.WordWrap
-                                                        }
-                                                    }
-                                                }
-                                            }
+                                        Label {
+                                            visible: false
+                                            text: settingsVisible ? t("界面设置已展开到主区域，可以直接调整主题、背景图和字体大小。", "Settings are expanded in the main area. You can directly adjust theme, background, and font sizes.") : t("从中间列表选择一个任务后，右侧会在这里展示完整详情。你可以直接编辑标题、概要与时间。", "Choose a task from the middle list and its full details will appear here. You can edit the title, summary, and time directly.")
+                                            wrapMode: Text.WordWrap
+                                            color: detailHintTextColor
+                                            font.pixelSize: detailFontSize - 2
                                         }
 
-
-                                        DetailCard {
-                                            width: parent.width
-                                            radius: 12
-                                            color: editTaskCompleted ? (homeDarkMode ? "#173a2d" : "#edf9f1") : (homeDarkMode ? "#423225" : "#fff6ea")
-                                            border.color: editTaskCompleted ? (homeDarkMode ? "#3fbf89" : "#9adbb8") : (homeDarkMode ? "#f2a365" : "#f6c48a")
-                                            visible: detailVisible
-
-                                            ColumnLayout {
-                                                anchors.fill: parent
-                                                anchors.margins: 14
-                                                spacing: 10
-
-                                                RowLayout {
-                                                    Layout.fillWidth: true
-                                                    spacing: 12
-
-                                                    Rectangle {
-                                                        width: 22
-                                                        height: 22
-                                                        radius: 11
-                                                        color: editTaskCompleted ? (homeDarkMode ? "#1f5a42" : "#dcfce7") : (homeDarkMode ? "#5a4026" : "#ffedd5")
-                                                        border.color: editTaskCompleted ? (homeDarkMode ? "#4ade80" : "#86efac") : (homeDarkMode ? "#fdba74" : "#fdba74")
-                                                        border.width: 1
-                                                        Layout.alignment: Qt.AlignVCenter
-
-                                                        Text {
-                                                            anchors.centerIn: parent
-                                                            text: editTaskCompleted ? "✓" : "·"
-                                                            color: editTaskCompleted ? (homeDarkMode ? "#bbf7d0" : "#15803d") : (homeDarkMode ? "#fed7aa" : "#c2410c")
-                                                            font.pixelSize: editTaskCompleted ? 12 : 18
-                                                            font.bold: editTaskCompleted
-                                                        }
-                                                    }
-
-                                                    Label {
-                                                        text: editTaskCompleted ? t("当前状态：已完成", "Status: Completed") : t("当前状态：未完成", "Status: Incomplete")
-                                                        color: editTaskCompleted ? (homeDarkMode ? "#bbf7d0" : "#166534") : (homeDarkMode ? "#fed7aa" : "#9a3412")
-                                                        font.pixelSize: Math.max(12, detailFontSize - 6)
-                                                        font.bold: true
-                                                    }
-
-                                                    Item { Layout.fillWidth: true }
-                                                }
-
-                                                Label {
-                                                    Layout.fillWidth: true
-                                                    text: editTaskCompleted ? t("任务已完成，可随时切回未完成状态。", "This task is completed. You can switch it back anytime.") : t("任务仍在进行中，完成后可切换状态。", "This task is still in progress. Mark it complete when finished.")
-                                                    color: detailHintTextColor
-                                                    wrapMode: Text.WordWrap
-                                                    font.pixelSize: Math.max(11, detailFontSize - 8)
-                                                    bottomPadding: 6
-                                                }
-
-                                                Item {
-                                                    Layout.fillWidth: true
-                                                    implicitHeight: 6
-                                                }
-
-                                                RowLayout {
-                                                    Layout.fillWidth: true
-                                                    spacing: 10
-
-                                                    Item { Layout.fillWidth: true }
-
-                                                    DetailPrimaryButton {
-                                                        text: editTaskCompleted ? t("设为未完成", "Mark incomplete") : t("设为完成", "Mark complete")
-                                                        implicitWidth: 126
-                                                        onClicked: editTaskCompleted = !editTaskCompleted
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        TextArea {
-                                            id: detailTextContent
-                                            width: parent.width
-                                            Layout.minimumHeight: 156
-                                            wrapMode: TextEdit.Wrap
-                                            visible: !mainWindow.contentIsImage(editTaskContent) && !mainWindow.contentIsFile(editTaskContent)
-                                            text: editTaskContent
-                                            onTextChanged: editTaskContent = text
-                                            color: detailTextColor
-                                            selectedTextColor: detailOnAccentColor
-                                            selectionColor: detailAccentColor
-                                            placeholderText: t("请输入正文或附件路径", "Enter content or attachment path")
-                                            topPadding: 14
-                                            bottomPadding: 14
-                                            leftPadding: 14
-                                            rightPadding: 14
-                                            background: Rectangle {
-                                                color: homeDarkMode ? "#313b47" : "#fbfdff"
-                                                radius: 12
-                                                border.color: detailTextContent.activeFocus
-                                                              ? (homeDarkMode ? "#6d8299" : "#c9d9e8")
-                                                              : detailBorderColor
-                                                border.width: 1
-
-                                                Rectangle {
-                                                    anchors.fill: parent
-                                                    radius: 12
-                                                    color: detailAccentColor
-                                                    opacity: detailTextContent.activeFocus ? (homeDarkMode ? 0.045 : 0.028) : 0
-                                                }
-                                            }
-                                        }
-
-                                        DetailCard {
-                                            width: parent.width
-                                            height: detailImage.status === Image.Ready ? Math.min(416, Math.max(192, detailImage.paintedHeight)) : 224
-                                            visible: mainWindow.contentIsImage(editTaskContent)
-
-                                            Image {
-                                                id: detailImage
-                                                anchors.fill: parent
-                                                anchors.margins: 12
-                                                source: parent.visible ? editTaskContent : ""
-                                                fillMode: Image.PreserveAspectFit
-                                                asynchronous: true
-                                                cache: false
-                                            }
-                                        }
-
-                                        DetailCard {
-                                            width: parent.width
-                                            visible: mainWindow.contentIsFile(editTaskContent)
-
-                                            ColumnLayout {
-                                                anchors.fill: parent
-                                                anchors.margins: 16
-                                                spacing: 12
-
-                                                RowLayout {
-                                                    Layout.fillWidth: true
-                                                    spacing: 12
-
-                                                    Label {
-                                                        text: "文件内容"
-                                                        color: detailTextColor
-                                                        font.pixelSize: Math.max(13, detailFontSize - 5)
-                                                        font.bold: true
-                                                    }
-
-                                                    Item { Layout.fillWidth: true }
-
-                                                    DetailActionButton {
-                                                        text: "打开文件"
-                                                        implicitWidth: 88
-                                                        onClicked: {
-                                                            const filePath = editTaskContent
-                                                            Qt.openUrlExternally(filePath.startsWith("file:/") ? filePath : "file:///" + filePath.replace(/\\/g, "/"))
-                                                        }
-                                                    }
-                                                }
-
-                                                Label {
-                                                    Layout.fillWidth: true
-                                                    text: editTaskContent
-                                                    wrapMode: Text.WordWrap
-                                                    color: detailMutedTextColor
-                                                    font.pixelSize: Math.max(12, detailFontSize - 7)
-                                                }
-                                            }
+                                        EmptyDetailState {
+                                            visible: !detailVisible && !newTaskVisible
+                                            homeDarkMode: mainWindow.homeDarkMode
+                                            detailFontSize: mainWindow.detailFontSize
+                                            detailTextColor: mainWindow.detailTextColor
+                                            detailHintTextColor: mainWindow.detailHintTextColor
+                                            tFunc: mainWindow.t
                                         }
 
                                         DetailMetaSection {
                                             visibleSection: detailVisible
+                                            showTitleEditor: false
+                                            homeDarkMode: mainWindow.homeDarkMode
+                                            detailFontSize: mainWindow.detailFontSize
+                                            editTaskTitle: mainWindow.editTaskTitle
+                                            selectedTaskCategoryColor: mainWindow.selectedTaskCategoryColor
+                                            selectedTaskCategoryName: mainWindow.selectedTaskCategoryName
+                                            selectedTaskAuthor: mainWindow.selectedTaskAuthor
+                                            selectedTaskCreatedAt: mainWindow.selectedTaskCreatedAt
+                                            editTaskStartDate: mainWindow.editTaskStartDate
+                                            editTaskDueDate: mainWindow.editTaskDueDate
+                                            editTaskPriority: mainWindow.editTaskPriority
+                                            editTaskCategoryIndex: mainWindow.editTaskCategoryIndex
+                                            categoryList: mainWindow.categoryList
+                                            showIdentitySection: true
+                                            showScheduleSection: false
+                                            showDetailAuthor: mainWindow.showDetailAuthor
+                                            showDetailCreatedDate: mainWindow.showDetailCreatedDate
+                                            showDetailStartDate: mainWindow.showDetailStartDate
+                                            showDetailDueDate: mainWindow.showDetailDueDate
+                                            showDetailPriority: mainWindow.showDetailPriority
+                                            detailTextColor: mainWindow.detailTextColor
+                                            detailMutedTextColor: mainWindow.detailMutedTextColor
+                                            detailHintTextColor: mainWindow.detailHintTextColor
+                                            detailBorderColor: mainWindow.detailBorderColor
+                                            detailElevatedColor: mainWindow.detailElevatedColor
+                                            detailAccentColor: mainWindow.detailAccentColor
+                                            detailOnAccentColor: mainWindow.detailOnAccentColor
+                                            detailTonalColor: mainWindow.detailTonalColor
+                                            tFunc: mainWindow.t
+                                            formatDateTimeFunc: mainWindow.formatDisplayDateTime
+                                            openDateTimeEditorFunc: mainWindow.openDateTimeEditor
+                                            onTitleEdited: function(value) { mainWindow.editTaskTitle = value }
+                                            onTitleEditFinished: mainWindow.saveSelectedTaskEdits()
+                                            onStartDateEdited: function(value) { mainWindow.editTaskStartDate = value; mainWindow.saveSelectedTaskEdits() }
+                                            onDueDateEdited: function(value) { mainWindow.editTaskDueDate = value; mainWindow.saveSelectedTaskEdits() }
+                                            onPriorityEdited: function(value) { mainWindow.editTaskPriority = value; mainWindow.saveSelectedTaskEdits() }
+                                            onCategoryIndexEdited: function(value) { mainWindow.editTaskCategoryIndex = value; mainWindow.saveSelectedTaskEdits() }
+                                        }
+
+                                        DetailEditingSection {
+                                            visibleSection: detailVisible
+                                            homeDarkMode: mainWindow.homeDarkMode
+                                            detailFontSize: mainWindow.detailFontSize
+                                            editTaskOutline: mainWindow.editTaskOutline
+                                            editTaskContent: mainWindow.editTaskContent
+                                            editTaskCompleted: mainWindow.editTaskCompleted
+                                            detailTextColor: mainWindow.detailTextColor
+                                            detailHintTextColor: mainWindow.detailHintTextColor
+                                            detailMutedTextColor: mainWindow.detailMutedTextColor
+                                            detailBorderColor: mainWindow.detailBorderColor
+                                            detailAccentColor: mainWindow.detailAccentColor
+                                            detailOnAccentColor: mainWindow.detailOnAccentColor
+                                            tFunc: mainWindow.t
+                                            contentIsImageFunc: mainWindow.contentIsImage
+                                            contentIsFileFunc: mainWindow.contentIsFile
+                                            onOutlineEdited: function(value) { mainWindow.editTaskOutline = value }
+                                            onEditingFinished: mainWindow.saveSelectedTaskEdits()
+                                            onContentEdited: function(value) { mainWindow.editTaskContent = value }
+                                            onCompletedEdited: function(value) { mainWindow.editTaskCompleted = value; mainWindow.saveSelectedTaskEdits() }
+                                        }
+
+
+                                        DetailMetaSection {
+                                            visibleSection: detailVisible
+                                            showTitleEditor: false
                                             homeDarkMode: mainWindow.homeDarkMode
                                             detailFontSize: mainWindow.detailFontSize
                                             editTaskTitle: mainWindow.editTaskTitle
@@ -1998,18 +1664,24 @@ Window {
                                             formatDateTimeFunc: mainWindow.formatDisplayDateTime
                                             openDateTimeEditorFunc: mainWindow.openDateTimeEditor
                                             onTitleEdited: function(value) { mainWindow.editTaskTitle = value }
-                                            onStartDateEdited: function(value) { mainWindow.editTaskStartDate = value }
-                                            onDueDateEdited: function(value) { mainWindow.editTaskDueDate = value }
-                                            onPriorityEdited: function(value) { mainWindow.editTaskPriority = value }
-                                            onCategoryIndexEdited: function(value) { mainWindow.editTaskCategoryIndex = value }
+                                            onTitleEditFinished: mainWindow.saveSelectedTaskEdits()
+                                            onStartDateEdited: function(value) { mainWindow.editTaskStartDate = value; mainWindow.saveSelectedTaskEdits() }
+                                            onDueDateEdited: function(value) { mainWindow.editTaskDueDate = value; mainWindow.saveSelectedTaskEdits() }
+                                            onPriorityEdited: function(value) { mainWindow.editTaskPriority = value; mainWindow.saveSelectedTaskEdits() }
+                                            onCategoryIndexEdited: function(value) { mainWindow.editTaskCategoryIndex = value; mainWindow.saveSelectedTaskEdits() }
+                                        }
+
+                                        Label {
+                                            visible: false
+                                            text: selectedTaskTime === "" ? "" : "时间标签：" + mainWindow.formatDisplayDateTime(selectedTaskTime)
+                                            color: homeDarkMode ? "#64748b" : "#8b6b42"
+                                            font.pixelSize: Math.max(12, detailFontSize - 7)
                                         }
                                     }
                                 }
                             }
                         }
                     }
-                }
-
                 }
 
                 SettingsPanel {
@@ -2155,41 +1827,46 @@ Window {
                         }
                     }
                 }
+                Rectangle {
+                    color: pageBaseColor
+                    clip: true
 
-                GanttChart {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    blueTaskBarsEnabled: mainWindow.ganttBlueTaskBars
-                    blueTodayColumnEnabled: mainWindow.ganttBlueTodayColumn
-                    blueGridLinesEnabled: mainWindow.ganttBlueGridLines
-                    onTaskClicked: (taskId) => {
-                        refreshCurrentView()
-                        for (let i = 0; i < AbstractContentsModel.rowCount(); ++i) {
-                            const task = AbstractContentsModel.get(i)
-                            if (task.index_num === taskId) {
-                                openTaskDetail(
-                                    task.index_num,
-                                    task.title,
-                                    task.outline,
-                                    task.content,
-                                    task.time,
-                                    task.startDate,
-                                    task.author,
-                                    task.created_at,
-                                    task.dueDate,
-                                    task.priority,
-                                    task.categoryId,
-                                    task.categoryName,
-                                    task.categoryColor
-                                )
-                                break
+                    GanttChart {
+                        anchors.fill: parent
+                        blueTaskBarsEnabled: mainWindow.ganttBlueTaskBars
+                        blueTodayColumnEnabled: mainWindow.ganttBlueTodayColumn
+                        blueGridLinesEnabled: mainWindow.ganttBlueGridLines
+                        onTaskClicked: (taskId) => {
+                            refreshCurrentView()
+                            for (let i = 0; i < AbstractContentsModel.rowCount(); ++i) {
+                                const task = AbstractContentsModel.get(i)
+                                if (task.index_num === taskId) {
+                                    openTaskDetail(
+                                        task.index_num,
+                                        task.title,
+                                        task.outline,
+                                        task.content,
+                                        task.time,
+                                        task.startDate,
+                                        task.author,
+                                        task.created_at,
+                                        task.dueDate,
+                                        task.priority,
+                                        task.categoryId,
+                                        task.categoryName,
+                                        task.categoryColor,
+                                        task.completed
+                                    )
+                                    break
+                                }
                             }
                         }
+                        onTaskDatesChanged: () => refreshCurrentView()
+                        onTaskProgressChanged: () => refreshCurrentView()
                     }
-                    onTaskDatesChanged: () => refreshCurrentView()
-                    onTaskProgressChanged: () => refreshCurrentView()
                 }
             }
         }
     }
 }
+

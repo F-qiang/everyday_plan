@@ -26,7 +26,8 @@ class AbstractContentsModel : public QAbstractListModel
         CategoryIdRole,
         CategoryNameRole,
         CategoryColorRole,
-        CompletedRole
+        CompletedRole,
+        TodaySelectedRole
     };
 public:
     explicit AbstractContentsModel(QObject *parent = nullptr);

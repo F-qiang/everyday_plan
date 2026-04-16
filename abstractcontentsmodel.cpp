@@ -40,6 +40,7 @@ QVariant AbstractContentsModel::data(const QModelIndex &index, int role) const
     case CategoryNameRole: return item->categoryName();
     case CategoryColorRole: return item->categoryColor();
     case CompletedRole: return item->completed();
+    case TodaySelectedRole: return item->todaySelected();
     default: return QVariant();
     }
 }
@@ -61,6 +62,7 @@ QHash<int, QByteArray> AbstractContentsModel::roleNames() const
     roles[CategoryNameRole] = "categoryName";
     roles[CategoryColorRole] = "categoryColor";
     roles[CompletedRole] = "completed";
+    roles[TodaySelectedRole] = "todaySelected";
     return roles;
 }
 
@@ -86,6 +88,7 @@ QVariantMap AbstractContentsModel::get(int row) const
     task.insert("categoryName", item->categoryName());
     task.insert("categoryColor", item->categoryColor());
     task.insert("completed", item->completed());
+    task.insert("todaySelected", item->todaySelected());
     return task;
 }
 
@@ -123,17 +126,20 @@ bool AbstractContentsModel::loadAllFromDatabase(const QString &dbPath, bool toda
                COALESCE(NULLIF(Users.nickname, ''), Users.email, '当前用户') AS author_name,
                COALESCE(Categories.name, '未分类') AS category_name,
                COALESCE(Categories.color, '#94a3b8') AS category_color,
-               CASE WHEN Tasks.status = 1 THEN 1 ELSE 0 END AS completed_flag
+               CASE WHEN Tasks.status = 1 THEN 1 ELSE 0 END AS completed_flag,
+               CASE WHEN (((Tasks.today_until IS NOT NULL AND Tasks.today_until != '' AND datetime(Tasks.today_until) > datetime('now', '+8 hours')) OR (Tasks.start_date IS NOT NULL AND Tasks.start_date != '' AND date(Tasks.start_date, '+8 hours') <= date('now', '+8 hours') AND (Tasks.end_date IS NULL OR Tasks.end_date = '' OR date(Tasks.end_date, '+8 hours') >= date('now', '+8 hours')))) AND NOT (Tasks.today_hidden_until IS NOT NULL AND Tasks.today_hidden_until != '' AND datetime(Tasks.today_hidden_until) > datetime('now', '+8 hours'))) THEN 1 ELSE 0 END AS today_selected_flag
         FROM Tasks
         LEFT JOIN Users ON Users.user_id = Tasks.user_id
         LEFT JOIN Categories ON Categories.category_id = Tasks.category_id
     )";
 
     if (todayOnly) {
-        sql += " WHERE ((Tasks.start_date IS NOT NULL AND Tasks.start_date != '' AND date(Tasks.start_date, '+8 hours') <= date('now', '+8 hours') AND (Tasks.end_date IS NULL OR Tasks.end_date = '' OR date(Tasks.end_date, '+8 hours') >= date('now', '+8 hours'))) OR (Tasks.today_until IS NOT NULL AND Tasks.today_until != '' AND datetime(Tasks.today_until) > datetime('now', '+8 hours')))";
+        sql += " WHERE (((Tasks.today_until IS NOT NULL AND Tasks.today_until != '' AND datetime(Tasks.today_until) > datetime('now', '+8 hours')) OR (Tasks.start_date IS NOT NULL AND Tasks.start_date != '' AND date(Tasks.start_date, '+8 hours') <= date('now', '+8 hours') AND (Tasks.end_date IS NULL OR Tasks.end_date = '' OR date(Tasks.end_date, '+8 hours') >= date('now', '+8 hours')))) AND NOT (Tasks.today_hidden_until IS NOT NULL AND Tasks.today_hidden_until != '' AND datetime(Tasks.today_hidden_until) > datetime('now', '+8 hours')))";
         if (!completedOnly) {
             sql += " AND Tasks.status != 1";
         }
+    } else if (!completedOnly) {
+        sql += " WHERE Tasks.status != 1";
     }
 
     if (completedOnly) {
@@ -161,6 +167,7 @@ bool AbstractContentsModel::loadAllFromDatabase(const QString &dbPath, bool toda
         item->setCategoryName(query.value("category_name").toString());
         item->setCategoryColor(query.value("category_color").toString());
         item->setCompleted(query.value("completed_flag").toInt() == 1);
+        item->setTodaySelected(query.value("today_selected_flag").toInt() == 1);
         item->setStartDate(query.value("start_date").toString());
         item->setDueDate(query.value("end_date").toString());
 

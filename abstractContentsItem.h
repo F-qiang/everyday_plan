@@ -24,6 +24,8 @@ class AbstractContentsItem : public QObject
     Q_PROPERTY(QString categoryName READ categoryName WRITE setCategoryName NOTIFY categoryNameChanged)
     Q_PROPERTY(QString categoryColor READ categoryColor WRITE setCategoryColor NOTIFY categoryColorChanged)
     Q_PROPERTY(bool completed READ completed WRITE setCompleted NOTIFY completedChanged)
+    Q_PROPERTY(bool todaySelected READ todaySelected WRITE setTodaySelected NOTIFY todaySelectedChanged)
+    Q_PROPERTY(bool todaySelected READ todaySelected WRITE setTodaySelected NOTIFY todaySelectedChanged)
 
 public:
     explicit AbstractContentsItem(QObject *parent = nullptr);
@@ -55,6 +57,8 @@ public:
     QString categoryColor() const;
     void setCategoryColor(const QString &categoryColor);
     bool completed() const;
+    bool todaySelected() const;
+    void setTodaySelected(bool todaySelected);
     void setCompleted(bool completed);
 
 signals:
@@ -71,6 +75,7 @@ signals:
     void categoryIdChanged();
     void categoryNameChanged();
     void categoryColorChanged();
+    void todaySelectedChanged();
     void completedChanged();
 
 private:
@@ -87,6 +92,7 @@ private:
     int m_categoryId = 0;
     QString m_categoryName;
     QString m_categoryColor = "#94a3b8";
+    bool m_todaySelected = false;
     bool m_completed = false;
 };
 

@@ -21,7 +21,7 @@ Item {
     property real doneCheckOpacity: completed ? 1 : 0
     property real doneFlashOpacity: 0
     property real donePulseOpacity: 0
-    signal markTodayRequested()
+    signal markTodayRequested(bool selected)
     signal completedToggled(bool completed)
     property int fontScale: 15
     signal detailedRequested()
@@ -325,7 +325,7 @@ Item {
 
                 Rectangle {
                     visible: completed
-                    implicitWidth: 52
+                    implicitWidth: 64
                     implicitHeight: 24
                     radius: 999
                     color: doneBadgeBackground
@@ -334,16 +334,24 @@ Item {
 
                     Text {
                         anchors.centerIn: parent
-                        text: "✓ 完成"
+                        text: "✓ " + mainWindow.t("已完成", "Completed")
                         color: doneBadgeText
                         font.pixelSize: 11
                         font.bold: true
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        enabled: mainWindow.currentPageType === mainWindow.pageCompleted
+                        cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        onClicked: completedToggled(false)
                     }
                 }
 
 
                 Button {
-                    text: completed ? "已完成" : "未完成"
+                    visible: mainWindow.currentPageType !== mainWindow.pageCompleted
+                    text: completed ? "已完成" : "完成"
                     implicitHeight: 24
                     implicitWidth: 58
                     onClicked: completedToggled(!completed)
@@ -369,9 +377,9 @@ Item {
                     text: "今日"
                     implicitHeight: 24
                     implicitWidth: 54
-                    enabled: !completed && !todaySelected
+                    enabled: !completed
                     opacity: completed ? 0.6 : 1
-                    onClicked: if (!todaySelected) markTodayRequested()
+                    onClicked: if (!completed) markTodayRequested(!todaySelected)
 
                     background: Rectangle {
                         radius: 12
@@ -393,7 +401,7 @@ Item {
                 ComboBox {
                     id: categorySelector
                     implicitHeight: 24
-                    implicitWidth: 96
+                    implicitWidth: 78
                     enabled: !completed
                     model: {
                         const items = [mainWindow.t("未分类", "Uncategorized")]
