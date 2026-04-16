@@ -154,6 +154,9 @@ Window {
     property var categoryList: []
     property int activeCategoryId: -1
     property string activeCategoryName: ""
+    property int editingCategoryId: -1
+    property string editingCategoryName: ""
+    property string editingCategoryColor: "#3b82f6"
     property int selectedTaskId: -1
     property int selectedTaskCategoryId: 0
     property string selectedTaskCategoryName: "未分类"
@@ -658,8 +661,29 @@ Window {
         ensureListPageForEditor()
         newCategoryVisible = true
         middleCollapsed = false
+        editingCategoryId = -1
+        editingCategoryName = ""
+        editingCategoryColor = "#3b82f6"
         loadCategories()
         newCategoryDialog.resetForm()
+    }
+
+    function openCategoryEditor(categoryId) {
+        for (let i = 0; i < categoryList.length; ++i) {
+            const category = categoryList[i]
+            if (category.categoryId === categoryId) {
+                detailVisible = false
+                newTaskVisible = false
+                ensureListPageForEditor()
+                newCategoryVisible = true
+                middleCollapsed = false
+                editingCategoryId = category.categoryId
+                editingCategoryName = category.name || ""
+                editingCategoryColor = category.color || "#3b82f6"
+                newCategoryDialog.loadCategory(editingCategoryName, editingCategoryColor)
+                break
+            }
+        }
     }
 
     function openTaskDetail(taskId, title, outline, content, time, startDate, author, createdAt, dueDate, priority, categoryId, categoryName, categoryColor, completed) {
@@ -1257,9 +1281,12 @@ Window {
             visible: true
             homeDarkMode: mainWindow.homeDarkMode
             categories: mainWindow.categoryList
-            selectedCategoryId: settingsVisible ? -1 : mainWindow.activeCategoryId
+            selectedCategoryId: newCategoryVisible ? mainWindow.editingCategoryId : (settingsVisible ? -1 : mainWindow.activeCategoryId)
             titleText: currentPageType === pageGantt ? t("甘特图分类", "Gantt Categories") : t("已有分类", "Categories")
-            onCategorySelected: (categoryId, categoryName) => mainWindow.showCategoryTasks(categoryId, categoryName)
+            onCategorySelected: (categoryId, categoryName) => {
+                mainWindow.showCategoryTasks(categoryId, categoryName)
+                mainWindow.openCategoryEditor(categoryId)
+            }
             onCreateCategoryRequested: showNewCategoryForm()
         }
 
@@ -1816,14 +1843,47 @@ Window {
                     visible: newCategoryVisible
                     active: newCategoryVisible
                     homeDarkMode: mainWindow.homeDarkMode
+                    editMode: mainWindow.editingCategoryId > 0
+                    categoryName: mainWindow.editingCategoryName
+                    selectedCategoryColor: mainWindow.editingCategoryColor
 
                     onCreateCategoryRequested: (name, color) => {
                         if (AuthManager.isLoggedIn) {
                             const categoryId = DatabaseManager.createCategory(AuthManager.currentUserId, name, color, "")
                             if (categoryId > 0) {
                                 loadCategories()
-                                newCategoryDialog.resetForm()
+                                editingCategoryId = categoryId
+                                editingCategoryName = name
+                                editingCategoryColor = color
+                                AbstractContentsModel.loadAllFromDatabase(databasePath, false, false)
+                                newCategoryDialog.loadCategory(name, color)
                             }
+                        }
+                    }
+
+                    onUpdateCategoryRequested: (name, color) => {
+                        if (editingCategoryId > 0 && DatabaseManager.updateCategory(editingCategoryId, name, color)) {
+                            editingCategoryName = name
+                            editingCategoryColor = color
+                            loadCategories()
+                            AbstractContentsModel.loadAllFromDatabase(databasePath, false, false)
+                            newCategoryDialog.loadCategory(name, color)
+                        }
+                    }
+
+                    onDeleteCategoryRequested: {
+                        if (editingCategoryId > 0 && DatabaseManager.deleteCategory(editingCategoryId)) {
+                            const deletedCategoryId = editingCategoryId
+                            editingCategoryId = -1
+                            editingCategoryName = ""
+                            editingCategoryColor = "#3b82f6"
+                            if (activeCategoryId === deletedCategoryId) {
+                                activeCategoryId = -1
+                                activeCategoryName = ""
+                            }
+                            loadCategories()
+                            AbstractContentsModel.loadAllFromDatabase(databasePath, false, false)
+                            newCategoryDialog.resetForm()
                         }
                     }
                 }

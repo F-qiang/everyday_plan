@@ -45,6 +45,7 @@ public:
 
     Q_INVOKABLE int createCategory(int userId, const QString &name, const QString &color, const QString &icon = QString());
     Q_INVOKABLE QVariantList getCategoriesByUser(int userId);
+    Q_INVOKABLE bool updateCategory(int categoryId, const QString &name, const QString &color);
     Q_INVOKABLE bool deleteCategory(int categoryId);
 
     Q_INVOKABLE bool saveVerificationCode(const QString &email, const QString &code);

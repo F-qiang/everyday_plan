@@ -127,8 +127,7 @@ ColumnLayout {
 
     Rectangle {
         Layout.fillWidth: true
-        Layout.minimumHeight: 160
-        implicitHeight: Math.max(160, checklistSection.implicitHeight + 4)
+        implicitHeight: checklistSection.implicitHeight + 16
         visible: !root.contentIsImageFunc(root.editTaskContent) && !root.contentIsFileFunc(root.editTaskContent)
         radius: 12
         color: root.homeDarkMode ? "#313b47" : "#fbfdff"

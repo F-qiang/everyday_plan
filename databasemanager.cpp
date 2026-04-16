@@ -395,6 +395,16 @@ QVariantList DatabaseManager::getCategoriesByUser(int userId)
     return categories;
 }
 
+bool DatabaseManager::updateCategory(int categoryId, const QString &name, const QString &color)
+{
+    QSqlQuery query(m_db);
+    query.prepare("UPDATE Categories SET name = ?, color = ? WHERE category_id = ?");
+    query.addBindValue(name);
+    query.addBindValue(color);
+    query.addBindValue(categoryId);
+    return query.exec();
+}
+
 bool DatabaseManager::deleteCategory(int categoryId)
 {
     QSqlQuery query(m_db);
