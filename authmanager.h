@@ -37,6 +37,7 @@ public:
     
     // 登出
     Q_INVOKABLE void logout();
+    Q_INVOKABLE void reloadSessionFromStorage();
     
     // 更新用户信息
     Q_INVOKABLE void updateNickname(const QString &nickname);

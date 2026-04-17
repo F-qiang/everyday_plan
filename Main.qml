@@ -16,6 +16,7 @@ Window {
      property int self_height: Screen.height
     property int self_width: Screen.width
     property string databasePath: "./data.db"
+    property bool sidebarBackupJustCompleted: false
 
     function formatDisplayDateTime(value) {
         const source = (value || "").trim()
@@ -95,6 +96,11 @@ Window {
         }
         const parts = source.split(/[\\/]/)
         return parts.length > 0 ? parts[parts.length - 1] : source
+    }
+
+    function isOneDriveSyncPath(path) {
+        const source = (path || "").toLowerCase()
+        return source.indexOf("onedrive") >= 0
     }
 
     function attachmentPathsFromContent(value) {
@@ -311,6 +317,9 @@ Window {
     property bool ganttBlueGridLines: defaultUserSettings.ganttBlueGridLines
     property bool ganttBlueTheme: ganttBlueTaskBars && ganttBlueTodayColumn && ganttBlueGridLines
     property bool homeDarkMode: false
+    property string backupDirectory: defaultUserSettings.backupDirectory
+    property string backupStatusText: ""
+    property string latestBackupPath: ""
     property string backgroundImageSource: defaultUserSettings.backgroundImageSource
     property int navFontSize: defaultUserSettings.navFontSize
     property int middleCardFontSize: defaultUserSettings.middleCardFontSize
@@ -347,6 +356,7 @@ Window {
         if (ganttBlueTodayColumn !== ganttBlueTheme) ganttBlueTodayColumn = ganttBlueTheme
         if (ganttBlueGridLines !== ganttBlueTheme) ganttBlueGridLines = ganttBlueTheme
     }
+    onBackupDirectoryChanged: persistUserSettings()
 
     width: self_width * 0.6
     height: self_height * 0.6
@@ -600,7 +610,8 @@ Window {
             "showDetailPriority": showDetailPriority,
             "ganttBlueTaskBars": ganttBlueTaskBars,
             "ganttBlueTodayColumn": ganttBlueTodayColumn,
-            "ganttBlueGridLines": ganttBlueGridLines
+            "ganttBlueGridLines": ganttBlueGridLines,
+            "backupDirectory": backupDirectory
         }
     }
 
@@ -624,6 +635,7 @@ Window {
         if (settings.hasOwnProperty("ganttBlueTaskBars")) ganttBlueTaskBars = settings.ganttBlueTaskBars
         if (settings.hasOwnProperty("ganttBlueTodayColumn")) ganttBlueTodayColumn = settings.ganttBlueTodayColumn
         if (settings.hasOwnProperty("ganttBlueGridLines")) ganttBlueGridLines = settings.ganttBlueGridLines
+        if (settings.hasOwnProperty("backupDirectory")) backupDirectory = settings.backupDirectory || "./backups"
     }
 
     function loadUserSettings() {
@@ -632,6 +644,9 @@ Window {
             return
         }
         applyUserSettings(DatabaseManager.getUserSettings(AuthManager.currentUserId))
+        if (!backupDirectory || backupDirectory === "" || backupDirectory === "./backups") {
+            backupDirectory = DatabaseManager.suggestedBackupDirectory()
+        }
     }
 
     function persistUserSettings() {
@@ -639,6 +654,52 @@ Window {
             return
         }
         DatabaseManager.saveUserSettings(AuthManager.currentUserId, collectUserSettings())
+    }
+
+    function runBackupExport() {
+        const accountLabel = AuthManager.currentUserNickname && AuthManager.currentUserNickname !== ""
+                           ? AuthManager.currentUserNickname
+                           : AuthManager.currentUserEmail
+        const exportedPath = DatabaseManager.exportBackup(backupDirectory, accountLabel)
+        if (exportedPath === "") {
+            sidebarBackupJustCompleted = false
+            backupStatusText = t("备份失败，请检查备份目录。", "Backup failed. Please check the backup folder.")
+            return
+        }
+        latestBackupPath = exportedPath
+        sidebarBackupJustCompleted = true
+        sidebarBackupResetTimer.restart()
+        backupStatusText = isOneDriveSyncPath(exportedPath)
+                ? t("备份已写入 OneDrive 同步目录，等待 OneDrive 客户端自动上传：", "Backup saved into the OneDrive sync folder. Waiting for the OneDrive desktop client to upload: ") + exportedPath
+                : t("备份成功：", "Backup created: ") + exportedPath
+    }
+
+    function restoreBackupFromFile(selectedFile) {
+        const backupFilePath = normalizeSelectedFile(selectedFile)
+        if (backupFilePath === "") {
+            backupStatusText = t("未选择备份文件。", "No backup file selected.")
+            return
+        }
+
+        if (!DatabaseManager.importBackup(backupFilePath)) {
+            backupStatusText = t("恢复失败，请检查备份文件是否可用。", "Restore failed. Please check whether the backup file is valid.")
+            return
+        }
+
+        latestBackupPath = backupFilePath
+        AuthManager.reloadSessionFromStorage()
+        loadUserSettings()
+        loadCategories()
+        refreshCurrentView()
+        backupStatusText = t("已从备份文件恢复：", "Restored from backup file: ") + backupFilePath
+    }
+
+
+    Timer {
+        id: sidebarBackupResetTimer
+        interval: 2200
+        repeat: false
+        onTriggered: sidebarBackupJustCompleted = false
     }
 
     function categoryIndexById(categoryId) {
@@ -1104,6 +1165,24 @@ Window {
         onRejected: pendingAttachmentReplacePath = ""
     }
 
+    FileDialog {
+        id: restoreBackupDialog
+        title: t("选择要恢复的备份文件", "Choose backup file to restore")
+        fileMode: FileDialog.OpenFile
+        nameFilters: ["Database backup (*.db)", "All files (*)"]
+        onAccepted: mainWindow.restoreBackupFromFile(selectedFile)
+    }
+
+    FolderDialog {
+        id: backupFolderDialog
+        title: t("选择备份目录", "Choose backup folder")
+        currentFolder: backupDirectory === "" ? "file:///" : Qt.resolvedUrl(backupDirectory)
+        onAccepted: {
+            backupDirectory = mainWindow.normalizeSelectedFile(selectedFolder)
+            backupStatusText = t("备份目录已更新。", "Backup folder updated.")
+        }
+    }
+
     Rectangle {
         id: leftRectangle
         x: 0
@@ -1119,18 +1198,26 @@ Window {
         property int hight_searchinput: 30
         property int topBargin: 12
         property int sidebarSectionGap: 12
+        readonly property int sidebarContentWidth: width
 
-        // 用户信息区域
-        Rectangle {
-            id: accountTangle
-            visible: true
-            readonly property bool loginPrompt: !AuthManager.isLoggedIn
-            readonly property bool settingsActive: settingsVisible && AuthManager.isLoggedIn
-            color: settingsActive ? "#1e3a5f" : (loginPrompt ? (loginHoverArea.containsMouse ? "#f8fafc" : "#ffffff") : "#ffffff")
+        Row {
+            id: accountRow
+            anchors.left: parent.left
+            anchors.top: parent.top
             width: leftRectangle.width
             height: leftRectangle.hight_account_tangle
-            border.color: settingsActive ? "#60a5fa" : (loginPrompt ? (loginHoverArea.containsMouse ? "#60a5fa" : "#93c5fd") : "#d8dee8")
-            border.width: settingsActive || loginPrompt ? 2 : 1
+            spacing: 0
+
+            Rectangle {
+                id: accountTangle
+                visible: true
+                readonly property bool loginPrompt: !AuthManager.isLoggedIn
+                readonly property bool settingsActive: settingsVisible && AuthManager.isLoggedIn
+                color: settingsActive ? "#1e3a5f" : (loginPrompt ? (loginHoverArea.containsMouse ? "#f8fafc" : "#ffffff") : "#ffffff")
+                width: parent.width
+                height: parent.height
+                border.color: settingsActive ? "#60a5fa" : (loginPrompt ? (loginHoverArea.containsMouse ? "#60a5fa" : "#93c5fd") : "#d8dee8")
+                border.width: settingsActive || loginPrompt ? 2 : 1
 
             Behavior on color {
                 ColorAnimation { duration: 140 }
@@ -1193,56 +1280,93 @@ Window {
 
             RowLayout {
                 anchors.fill: parent
-                anchors.margins: 10
-                spacing: 8
-
-                // 用户头像
-                Rectangle {
-                    width: 38
-                    height: 32
-                    radius: 18
-                    color: accountTangle.settingsActive ? "#f8fafc" : (accountTangle.loginPrompt ? "#ffffff" : "#ffffff")
-                    border.color: accountTangle.loginPrompt ? (loginHoverArea.containsMouse ? "#60a5fa" : "#93c5fd") : "transparent"
-                    border.width: accountTangle.loginPrompt ? 1 : 0
-
-                    Behavior on color {
-                        ColorAnimation { duration: 140 }
-                    }
-
-                    Behavior on border.color {
-                        ColorAnimation { duration: 140 }
-                    }
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: AuthManager.isLoggedIn ? 
-                              AuthManager.currentUserNickname.charAt(0).toUpperCase() : "登"
-                        font.pixelSize: 18
-                        font.bold: true
-                        color: accountTangle.settingsActive ? "#1d4ed8" : "#2563eb"
-                    }
-                }
+                anchors.margins: 12
+                spacing: 10
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 2
+                    Layout.alignment: Qt.AlignTop
+                    spacing: 3
 
-                    Text {
-                        text: AuthManager.isLoggedIn ? 
-                              AuthManager.currentUserNickname : "未登录账号"
-                        font.pixelSize: 14
-                        font.bold: true
-                        color: accountTangle.settingsActive ? "#f8fafc" : "#0f172a"
-                        elide: Text.ElideRight
+                    RowLayout {
                         Layout.fillWidth: true
+                        spacing: 10
+
+                        Text {
+                            text: AuthManager.isLoggedIn ? AuthManager.currentUserNickname : "未登录账号"
+                            font.pixelSize: 16
+                            font.bold: true
+                            color: accountTangle.settingsActive ? "#f8fafc" : "#0f172a"
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignTop
+                        }
+
+                        Button {
+                            visible: AuthManager.isLoggedIn
+                            text: sidebarBackupJustCompleted ? "已备份" : "备份"
+                            font.pixelSize: 11
+                            enabled: !settingsVisible
+                            opacity: settingsVisible ? 0.55 : 1
+                            implicitHeight: 28
+                            implicitWidth: sidebarBackupJustCompleted ? 72 : 68
+                            Layout.alignment: Qt.AlignTop
+                            hoverEnabled: true
+
+                            background: Rectangle {
+                                radius: 14
+                                color: {
+                                    if (parent.down) return accountTangle.settingsActive ? "#2f435c" : "#eef4fb"
+                                    if (parent.hovered) return accountTangle.settingsActive ? "#2b4158" : "#f6f9fc"
+                                    return accountTangle.settingsActive ? "#284059" : "#f8fbff"
+                                }
+                                border.color: sidebarBackupJustCompleted
+                                              ? (accountTangle.settingsActive ? "#9dd6b8" : "#86cfa9")
+                                              : (accountTangle.settingsActive ? "#5f7fa3" : "#d7e5f5")
+                                border.width: 1
+
+                                Behavior on color {
+                                    ColorAnimation { duration: 140 }
+                                }
+
+                                Behavior on border.color {
+                                    ColorAnimation { duration: 160 }
+                                }
+                            }
+
+                            contentItem: Row {
+                                spacing: 5
+                                anchors.centerIn: parent
+
+                                Text {
+                                    text: sidebarBackupJustCompleted ? "✓" : "↓"
+                                    font.pixelSize: 12
+                                    font.bold: false
+                                    color: sidebarBackupJustCompleted
+                                           ? (accountTangle.settingsActive ? "#d7f5e3" : "#2f855a")
+                                           : (accountTangle.settingsActive ? "#dbeafe" : "#5b7da6")
+                                }
+
+                                Text {
+                                    text: parent.parent.text
+                                    font.pixelSize: 11
+                                    font.bold: sidebarBackupJustCompleted
+                                    color: sidebarBackupJustCompleted
+                                           ? (accountTangle.settingsActive ? "#eafbf0" : "#2f855a")
+                                           : (accountTangle.settingsActive ? "#e5eefb" : "#4f6f96")
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                            }
+
+                            onClicked: mainWindow.runBackupExport()
+                        }
                     }
 
                     Text {
-                        text: AuthManager.isLoggedIn ? 
-                              AuthManager.currentUserEmail : "点击登录后同步任务与分类"
+                        text: AuthManager.isLoggedIn ? AuthManager.currentUserEmail : "点击登录后同步任务与分类"
                         font.pixelSize: 10
-                        color: accountTangle.settingsActive ? "#cbd5e1" : (accountTangle.loginPrompt ? (loginHoverArea.containsMouse ? "#1d4ed8" : "#2563eb") : "#64748b")
-                        font.bold: accountTangle.loginPrompt
+                        color: accountTangle.settingsActive ? "#9fb4d1" : (accountTangle.loginPrompt ? (loginHoverArea.containsMouse ? "#4f86c6" : "#6b8bb5") : "#94a3b8")
+                        font.bold: false
                         elide: Text.ElideRight
                         Layout.fillWidth: true
                     }
@@ -1286,41 +1410,15 @@ Window {
                         }
                     }
                 }
-
-                Button {
-                    visible: AuthManager.isLoggedIn
-                    text: "退出"
-                    font.pixelSize: 11
-                    enabled: !settingsVisible
-                    opacity: settingsVisible ? 0.55 : 1
-                    implicitHeight: 28
-                    implicitWidth: 52
-                    
-                    background: Rectangle {
-                        color: parent.pressed ? (accountTangle.settingsActive ? "#334155" : "#eff6ff") : "transparent"
-                        border.color: accountTangle.settingsActive ? "#cbd5e1" : "#93c5fd"
-                        border.width: 1
-                        radius: 4
-                    }
-                    
-                    contentItem: Text {
-                        text: parent.text
-                        font.pixelSize: 12
-                        color: accountTangle.settingsActive ? "#f8fafc" : "#1d4ed8"
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                    
-                    onClicked: AuthManager.logout()
-                }
             }
+        }
         }
 
         TextField {
             id: searchInput
             x: 0
-            y: 147
-            width: accountTangle.width
+            y: accountRow.y + accountRow.height + leftRectangle.topBargin
+            width: leftRectangle.sidebarContentWidth
             height: leftRectangle.hight_searchinput + 4
             visible: true
             text: ""
@@ -1345,7 +1443,7 @@ Window {
         ToolBar {
             id: toolBar
             x: 0
-            width: accountTangle.width
+            width: leftRectangle.sidebarContentWidth
             height: toolBarColumn.implicitHeight
             anchors.top: searchInput.bottom
             anchors.topMargin: leftRectangle.sidebarSectionGap
@@ -1430,7 +1528,7 @@ Window {
         ToolBar {
             id: toolBar1
             x: 0
-            width: accountTangle.width
+            width: leftRectangle.sidebarContentWidth
             height: 38
             anchors.bottom: parent.bottom
             anchors.bottomMargin: leftRectangle.sidebarSectionGap + 2
@@ -1875,6 +1973,9 @@ Window {
                     showDetailDueDate: mainWindow.showDetailDueDate
                     showDetailPriority: mainWindow.showDetailPriority
                     ganttBlueTheme: mainWindow.ganttBlueTheme
+                    backupDirectory: mainWindow.backupDirectory
+                    backupStatusText: mainWindow.backupStatusText
+                    currentUserName: AuthManager.currentUserNickname
                     onBackgroundImageSourceChanged: {
                         mainWindow.backgroundImageSource = backgroundImageSource
                         mainWindow.persistUserSettings()
@@ -1919,7 +2020,10 @@ Window {
                         mainWindow.ganttBlueTheme = ganttBlueTheme
                         mainWindow.persistUserSettings()
                     }
-                    onLogoutRequested: AuthManager.logout()
+                    onChooseBackupDirectoryRequested: backupFolderDialog.open()
+                    onBackupNowRequested: mainWindow.runBackupExport()
+                    onRestoreBackupRequested: restoreBackupDialog.open()
+                    onDisplayNameEdited: {
                 }
 
                 NewTaskDialog {
@@ -2067,3 +2171,4 @@ Window {
     }
 }
 
+}

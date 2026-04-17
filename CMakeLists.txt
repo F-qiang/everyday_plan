@@ -48,6 +48,10 @@ qt_add_qml_module(appeveryday_day
         authmanager.h
         ganttmodel.cpp
         ganttmodel.h
+        oneDriveManager.cpp
+        oneDriveManager.h
+        oneDriveAppConfig.cpp
+        oneDriveAppConfig.h
 
 
 )

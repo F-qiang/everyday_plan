@@ -350,12 +350,41 @@ void AuthManager::logout()
     qDebug() << "用户已登出";
 }
 
+void AuthManager::reloadSessionFromStorage()
+{
+    QSettings settings("EverydayPlan", "Auth");
+    const int storedUserId = settings.value("currentUserId", -1).toInt();
+
+    m_currentUserId = -1;
+    m_currentEmail.clear();
+    m_currentNickname.clear();
+    m_isLoggedIn = false;
+
+    if (storedUserId > 0) {
+        const QVariantMap userInfo = DatabaseManager::instance()->getUserInfo(storedUserId);
+        if (!userInfo.isEmpty()) {
+            m_currentUserId = storedUserId;
+            m_currentEmail = userInfo.value("email").toString();
+            m_currentNickname = userInfo.value("nickname").toString();
+            m_isLoggedIn = true;
+        }
+    }
+
+    emit loginStateChanged();
+}
+
 void AuthManager::updateNickname(const QString &nickname)
 {
     if (m_currentUserId < 0) return;
+
+    const QString trimmed = nickname.trimmed();
+    const QString targetName = trimmed.isEmpty() ? m_currentEmail.section('@', 0, 0) : trimmed;
+    if (targetName == m_currentNickname) {
+        return;
+    }
     
-    if (DatabaseManager::instance()->updateUserInfo(m_currentUserId, nickname)) {
-        m_currentNickname = nickname;
+    if (DatabaseManager::instance()->updateUserInfo(m_currentUserId, targetName)) {
+        m_currentNickname = targetName;
         emit loginStateChanged();
     }
 }

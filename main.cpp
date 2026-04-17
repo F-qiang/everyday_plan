@@ -8,6 +8,7 @@
 #include "databasemanager.h"
 #include "authmanager.h"
 #include "ganttmodel.h"
+#include "oneDriveManager.h"
 
 int main(int argc, char *argv[])
 {
@@ -41,6 +42,9 @@ int main(int argc, char *argv[])
     // 新增：认证管理器（单例）
     qmlRegisterSingletonInstance<AuthManager>("AuthManager", 1, 0, "AuthManager",
                                                AuthManager::instance());
+
+    qmlRegisterSingletonInstance<OneDriveManager>("OneDriveManager", 1, 0, "OneDriveManager",
+                                                   OneDriveManager::instance());
     
     // 新增：甘特图模型
     qmlRegisterType<GanttModel>("GanttModel", 1, 0, "GanttModelType");

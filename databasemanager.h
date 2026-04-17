@@ -7,6 +7,8 @@
 #include <QSqlQuery>
 #include <QString>
 #include <QVariantMap>
+#include <QUrl>
+#include <QRegularExpression>
 
 class DatabaseManager : public QObject
 {
@@ -31,6 +33,9 @@ public:
     Q_INVOKABLE QVariantMap getUserSettings(int userId);
     Q_INVOKABLE bool ensureUserSettingsRow(int userId);
     Q_INVOKABLE bool saveUserSettings(int userId, const QVariantMap &settings);
+    Q_INVOKABLE QString suggestedBackupDirectory() const;
+    Q_INVOKABLE QString exportBackup(const QString &targetDirectoryUrlOrPath, const QString &accountLabel = QString());
+    Q_INVOKABLE bool importBackup(const QString &backupFileUrlOrPath);
 
     Q_INVOKABLE int createTask(int userId, const QString &title, const QString &description,
                                const QString &content, const QString &startDate, const QString &endDate,

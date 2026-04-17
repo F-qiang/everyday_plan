@@ -18,7 +18,14 @@ Item {
     property bool showDetailDueDate: true
     property bool showDetailPriority: true
     property bool ganttBlueTheme: true
+    property string backupDirectory: "./backups"
+    property string backupStatusText: ""
+    property string currentUserName: ""
     signal logoutRequested()
+    signal chooseBackupDirectoryRequested()
+    signal backupNowRequested()
+    signal restoreBackupRequested()
+    signal displayNameEdited(string value)
 
     readonly property color pageBackground: homeDarkMode ? "#2f343c" : "#ffffff"
     readonly property color panelBackground: homeDarkMode ? "#3a4049" : "#ffffff"
@@ -29,6 +36,11 @@ Item {
 
     function t(zh, en) {
         return uiLanguage === "en" ? en : zh
+    }
+
+    function isOneDriveDirectory(path) {
+        const source = (path || "").toLowerCase()
+        return source.indexOf("onedrive") >= 0
     }
 
     Rectangle {
@@ -80,6 +92,56 @@ Item {
                             color: root.subTitleColor
                             font.pixelSize: 13
                             wrapMode: Text.WordWrap
+                        }
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: accountProfileLayout.implicitHeight + 32
+                    radius: 18
+                    color: root.panelBackground
+                    border.color: root.panelBorder
+                    border.width: 1
+
+                    ColumnLayout {
+                        id: accountProfileLayout
+                        anchors.fill: parent
+                        anchors.margins: 18
+                        spacing: 12
+
+                        Label {
+                            text: root.t("名称", "Display Name")
+                            color: root.titleColor
+                            font.pixelSize: 18
+                            font.bold: true
+                        }
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: root.t("设置你在左上角账户区和任务作者里显示的名称。", "Set the name shown in the top-left account card and task author label.")
+                            color: root.subTitleColor
+                            font.pixelSize: 12
+                            wrapMode: Text.WordWrap
+                        }
+
+                        TextField {
+                            Layout.fillWidth: true
+                            implicitHeight: 42
+                            placeholderText: root.t("输入你的显示名称", "Enter your display name")
+                            text: root.currentUserName
+                            selectByMouse: true
+                            onEditingFinished: root.displayNameEdited(text)
+
+                            background: Rectangle {
+                                radius: 12
+                                color: root.fieldBackground
+                                border.color: root.panelBorder
+                                border.width: 1
+                            }
+
+                            color: root.titleColor
+                            placeholderTextColor: root.subTitleColor
                         }
                     }
                 }
@@ -369,6 +431,140 @@ Item {
 
                 Rectangle {
                     Layout.fillWidth: true
+                    implicitHeight: backupLayout.implicitHeight + 32
+                    radius: 18
+                    color: root.panelBackground
+                    border.color: root.panelBorder
+                    border.width: 1
+
+                    ColumnLayout {
+                        id: backupLayout
+                        anchors.fill: parent
+                        anchors.margins: 18
+                        spacing: 12
+
+                        Label {
+                            text: root.t("备份中心", "Backup Center")
+                            color: root.titleColor
+                            font.pixelSize: 18
+                            font.bold: true
+                        }
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: root.t("先将数据导出到本地备份目录，后续可直接把该目录放进 OneDrive 同步。左侧小按钮可随时主动执行一次备份。", "Export your data to a local backup folder first, then place that folder inside OneDrive for sync later. The small left-side button can trigger a backup anytime.")
+                            color: root.subTitleColor
+                            font.pixelSize: 12
+                            wrapMode: Text.WordWrap
+                        }
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: root.t("当前备份目录：", "Current backup folder: ") + root.backupDirectory
+                            color: root.titleColor
+                            font.pixelSize: 13
+                            wrapMode: Text.WrapAnywhere
+                        }
+
+                        Label {
+                            visible: root.backupStatusText !== ""
+                            Layout.fillWidth: true
+                            text: root.backupStatusText
+                            color: root.subTitleColor
+                            font.pixelSize: 12
+                            wrapMode: Text.WordWrap
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 12
+
+                            Button {
+                                text: root.t("选择备份目录", "Choose Backup Folder")
+                                Layout.fillWidth: true
+                                implicitHeight: 40
+                                onClicked: root.chooseBackupDirectoryRequested()
+                            }
+
+                            Button {
+                                text: root.t("立即备份", "Back Up Now")
+                                Layout.fillWidth: true
+                                implicitHeight: 40
+                                onClicked: root.backupNowRequested()
+                            }
+                        }
+
+                        Button {
+                            text: root.t("从备份文件恢复", "Restore From Backup File")
+                            Layout.fillWidth: true
+                            implicitHeight: 40
+                            onClicked: root.restoreBackupRequested()
+                        }
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: oneDriveLayout.implicitHeight + 32
+                    radius: 18
+                    color: root.panelBackground
+                    border.color: root.panelBorder
+                    border.width: 1
+
+                    ColumnLayout {
+                        id: oneDriveLayout
+                        anchors.fill: parent
+                        anchors.margins: 18
+                        spacing: 12
+
+                        Label {
+                            text: root.t("OneDrive 同步", "OneDrive Sync")
+                            color: root.titleColor
+                            font.pixelSize: 18
+                            font.bold: true
+                        }
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: root.t("这里不再走网页登录和云端 API 上传。只要你的电脑已经安装并登录 OneDrive，本应用会把备份文件直接写入 OneDrive 同步文件夹，后续由 OneDrive 客户端自动上传到云端。", "This app no longer uses browser sign-in or cloud API upload here. If OneDrive is installed and signed in on this computer, backups are written directly into the OneDrive sync folder and then uploaded by the OneDrive desktop client automatically.")
+                            color: root.subTitleColor
+                            font.pixelSize: 12
+                            wrapMode: Text.WordWrap
+                        }
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: root.isOneDriveDirectory(root.backupDirectory)
+                                  ? root.t("当前备份目录已经位于 OneDrive 同步目录中。点击“立即备份”后，文件会自动进入 OneDrive 待同步队列。", "The current backup folder is already inside your OneDrive sync directory. After you click Back Up Now, the file will automatically be picked up by OneDrive for syncing.")
+                                  : root.t("当前备份目录还不在 OneDrive 同步目录中。建议把备份目录切换到系统中的 OneDrive 文件夹，例如 OneDrive/EverydayPlanBackup。", "The current backup folder is not inside your OneDrive sync directory yet. It is recommended to switch the backup folder to something like OneDrive/EverydayPlanBackup.")
+                            color: root.subTitleColor
+                            font.pixelSize: 12
+                            wrapMode: Text.WordWrap
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 12
+
+                            Button {
+                                text: root.t("选择 OneDrive 文件夹", "Choose OneDrive Folder")
+                                Layout.fillWidth: true
+                                implicitHeight: 40
+                                onClicked: root.chooseBackupDirectoryRequested()
+                            }
+
+                            Button {
+                                text: root.t("立即备份到同步目录", "Back Up to Sync Folder")
+                                Layout.fillWidth: true
+                                implicitHeight: 40
+                                onClicked: root.backupNowRequested()
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
                     implicitHeight: fontLayout.implicitHeight + 32
                     radius: 18
                     color: root.panelBackground
@@ -427,6 +623,7 @@ Item {
                         }
                     }
                 }
+
             }
         }
     }

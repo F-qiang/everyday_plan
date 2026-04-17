@@ -5,6 +5,12 @@
 #include <QVariantMap>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QUrl>
+#include <QStandardPaths>
+#include <QRegularExpression>
 
 DatabaseManager* DatabaseManager::m_instance = nullptr;
 
@@ -154,6 +160,7 @@ QVariantMap DatabaseManager::defaultUserSettings() const
         {"ganttBlueTaskBars", true},
         {"ganttBlueTodayColumn", true},
         {"ganttBlueGridLines", true},
+        {"backupDirectory", suggestedBackupDirectory()},
         {"uiLanguage", "zh"}
     };
 }
@@ -274,6 +281,124 @@ bool DatabaseManager::saveUserSettings(int userId, const QVariantMap &settings)
     query.addBindValue(userId);
     query.addBindValue(QString::fromUtf8(json));
     return query.exec();
+}
+
+QString DatabaseManager::suggestedBackupDirectory() const
+{
+    const QString homePath = QDir::homePath();
+    const QStringList candidatePaths = {
+        homePath + QStringLiteral("/OneDrive/EverydayPlanBackup"),
+        homePath + QStringLiteral("/OneDrive - Personal/EverydayPlanBackup"),
+        homePath + QStringLiteral("/OneDrive - 家庭版/EverydayPlanBackup"),
+        homePath + QStringLiteral("/OneDrive - 公司/EverydayPlanBackup")
+    };
+
+    for (const QString &candidate : candidatePaths) {
+        QDir parentDir(QFileInfo(candidate).absolutePath());
+        if (parentDir.exists()) {
+            return QDir::toNativeSeparators(candidate);
+        }
+    }
+
+    return QStringLiteral("./backups");
+}
+
+QString DatabaseManager::exportBackup(const QString &targetDirectoryUrlOrPath, const QString &accountLabel)
+{
+    QString targetDirectory = targetDirectoryUrlOrPath.trimmed();
+    if (targetDirectory.isEmpty()) {
+        return QString();
+    }
+
+    const QUrl maybeUrl(targetDirectory);
+    if (maybeUrl.isValid() && maybeUrl.isLocalFile()) {
+        targetDirectory = maybeUrl.toLocalFile();
+    }
+
+    QDir dir(targetDirectory);
+    if (!dir.exists() && !dir.mkpath(QStringLiteral("."))) {
+        emit errorOccurred(QStringLiteral("无法创建备份目录: ") + targetDirectory);
+        return QString();
+    }
+
+    QString prefix = accountLabel.trimmed();
+    if (prefix.isEmpty()) {
+        prefix = QStringLiteral("default");
+    }
+    prefix = prefix.toLower();
+    prefix.replace(QRegularExpression(QStringLiteral("[^a-z0-9._-]+")), QStringLiteral("_"));
+    prefix.replace(QRegularExpression(QStringLiteral("_+")), QStringLiteral("_"));
+    prefix.remove(QRegularExpression(QStringLiteral("^_+|_+$")));
+    if (prefix.isEmpty()) {
+        prefix = QStringLiteral("default");
+    }
+
+    const QString backupPath = dir.filePath(prefix + QStringLiteral("_everyday_backup_") + QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd_HHmmss")) + QStringLiteral(".db"));
+    QFile::remove(backupPath);
+
+    const QString escapedPath = QDir::toNativeSeparators(backupPath).replace("'", "''");
+    QSqlQuery query(m_db);
+    if (!query.exec(QStringLiteral("VACUUM INTO '") + escapedPath + QStringLiteral("'"))) {
+        emit errorOccurred(query.lastError().text());
+        return QString();
+    }
+
+    return QDir::toNativeSeparators(backupPath);
+}
+
+bool DatabaseManager::importBackup(const QString &backupFileUrlOrPath)
+{
+    QString backupPath = backupFileUrlOrPath.trimmed();
+    if (backupPath.isEmpty()) {
+        emit errorOccurred(QStringLiteral("未选择备份文件"));
+        return false;
+    }
+
+    const QUrl maybeUrl(backupPath);
+    if (maybeUrl.isValid() && maybeUrl.isLocalFile()) {
+        backupPath = maybeUrl.toLocalFile();
+    }
+
+    const QFileInfo backupInfo(backupPath);
+    if (!backupInfo.exists() || !backupInfo.isFile()) {
+        emit errorOccurred(QStringLiteral("备份文件不存在: ") + backupPath);
+        return false;
+    }
+
+    const QString connectionName = QStringLiteral("main_connection");
+    if (m_db.isOpen()) {
+        m_db.close();
+    }
+    m_db = QSqlDatabase();
+    if (QSqlDatabase::contains(connectionName)) {
+        QSqlDatabase::removeDatabase(connectionName);
+    }
+
+    QFile::remove(m_dbPath);
+    if (!QFile::copy(backupPath, m_dbPath)) {
+        emit errorOccurred(QStringLiteral("恢复备份失败，无法写入数据库文件"));
+        m_db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), connectionName);
+        m_db.setDatabaseName(m_dbPath);
+        m_db.open();
+        return false;
+    }
+
+    m_db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), connectionName);
+    m_db.setDatabaseName(m_dbPath);
+    if (!m_db.open()) {
+        emit errorOccurred(m_db.lastError().text());
+        return false;
+    }
+
+    if (!createTables()) {
+        return false;
+    }
+    if (!migrateFromOldVersion()) {
+        return false;
+    }
+
+    emit isOpenChanged();
+    return true;
 }
 
 int DatabaseManager::createTask(int userId, const QString &title, const QString &description, const QString &content, const QString &startDate, const QString &endDate, int priority, int categoryId, bool completed)
