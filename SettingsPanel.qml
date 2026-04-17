@@ -17,9 +17,7 @@ Item {
     property bool showDetailStartDate: true
     property bool showDetailDueDate: true
     property bool showDetailPriority: true
-    property bool ganttBlueTaskBars: true
-    property bool ganttBlueTodayColumn: true
-    property bool ganttBlueGridLines: true
+    property bool ganttBlueTheme: true
     signal logoutRequested()
 
     readonly property color pageBackground: homeDarkMode ? "#2f343c" : "#ffffff"
@@ -362,21 +360,9 @@ Item {
                         }
 
                         Switch {
-                            text: "任务条使用浅蓝主题"
-                            checked: root.ganttBlueTaskBars
-                            onToggled: root.ganttBlueTaskBars = checked
-                        }
-
-                        Switch {
-                            text: "今日高亮列使用浅蓝主题"
-                            checked: root.ganttBlueTodayColumn
-                            onToggled: root.ganttBlueTodayColumn = checked
-                        }
-
-                        Switch {
-                            text: "网格线使用浅蓝主题"
-                            checked: root.ganttBlueGridLines
-                            onToggled: root.ganttBlueGridLines = checked
+                            text: "使用浅蓝主题"
+                            checked: root.ganttBlueTheme
+                            onToggled: root.ganttBlueTheme = checked
                         }
                     }
                 }

@@ -97,6 +97,124 @@ Window {
         return parts.length > 0 ? parts[parts.length - 1] : source
     }
 
+    function attachmentPathsFromContent(value) {
+        const source = ((value || "") + "").replace(/\r/g, "")
+        const matches = source.match(/^\s*(\[\[attachment:.+\]\]\s*)+/)
+        if (!matches) {
+            const trimmed = source.trim()
+            return contentIsFile(trimmed) ? [trimmed] : []
+        }
+
+        const attachmentLines = matches[0].match(/\[\[attachment:(.+?)\]\]/g) || []
+        const paths = []
+        for (let i = 0; i < attachmentLines.length; ++i) {
+            const lineMatch = attachmentLines[i].match(/^\[\[attachment:(.+)\]\]$/)
+            if (lineMatch && (lineMatch[1] || "").trim() !== "") {
+                paths.push((lineMatch[1] || "").trim())
+            }
+        }
+        return paths
+    }
+
+    function attachmentPathFromContent(value) {
+        const paths = attachmentPathsFromContent(value)
+        return paths.length > 0 ? paths[0] : ""
+    }
+
+    function bodyTextFromContent(value) {
+        const source = ((value || "") + "").replace(/\r/g, "")
+        const trimmed = source.trim()
+        if (trimmed === "") {
+            return ""
+        }
+
+        const matches = source.match(/^\s*(\[\[attachment:.+\]\]\s*)+/)
+        if (matches) {
+            return source.slice(matches[0].length).replace(/^\n+/, "")
+        }
+        return contentIsFile(trimmed) ? "" : source
+    }
+
+    function composeContentWithAttachments(bodyText, attachmentPaths) {
+        const body = ((bodyText || "") + "").replace(/\r/g, "").replace(/[ \t\n]+$/, "")
+        const paths = attachmentPaths || []
+        const normalizedPaths = []
+        for (let i = 0; i < paths.length; ++i) {
+            const path = ((paths[i] || "") + "").trim()
+            if (path !== "") {
+                normalizedPaths.push(path)
+            }
+        }
+        if (normalizedPaths.length === 0) {
+            return body
+        }
+        const attachmentBlock = normalizedPaths.map(function(path) {
+            return "[[attachment:" + path + "]]"
+        }).join("\n")
+        return body === "" ? attachmentBlock : attachmentBlock + "\n\n" + body
+    }
+
+    function appendAttachmentToContent(value, attachmentPath) {
+        const path = ((attachmentPath || "") + "").trim()
+        if (path === "") {
+            return value
+        }
+        const paths = attachmentPathsFromContent(value)
+        paths.push(path)
+        return composeContentWithAttachments(bodyTextFromContent(value), paths)
+    }
+
+    function removeAttachmentFromContent(value, attachmentPath) {
+        const path = ((attachmentPath || "") + "").trim()
+        const paths = attachmentPathsFromContent(value).filter(function(item) {
+            return item !== path
+        })
+        return composeContentWithAttachments(bodyTextFromContent(value), paths)
+    }
+
+    function replaceAttachmentInContent(value, oldPath, newPath) {
+        const oldTarget = ((oldPath || "") + "").trim()
+        const newTarget = ((newPath || "") + "").trim()
+        if (oldTarget === "") {
+            return appendAttachmentToContent(value, newTarget)
+        }
+        const paths = attachmentPathsFromContent(value)
+        const nextPaths = []
+        let replaced = false
+        for (let i = 0; i < paths.length; ++i) {
+            if (!replaced && paths[i] === oldTarget) {
+                if (newTarget !== "") {
+                    nextPaths.push(newTarget)
+                }
+                replaced = true
+            } else {
+                nextPaths.push(paths[i])
+            }
+        }
+        if (!replaced && newTarget !== "") {
+            nextPaths.push(newTarget)
+        }
+        return composeContentWithAttachments(bodyTextFromContent(value), nextPaths)
+    }
+
+    function openLocalFile(path) {
+        const source = (path || "").trim()
+        if (source === "") {
+            return
+        }
+        let fileUrl = source
+        if (!source.startsWith("file://")) {
+            if (Qt.platform.os === "windows") {
+                fileUrl = "file:///" + source.replace(/\\/g, "/")
+            } else if (source.startsWith("/")) {
+                fileUrl = "file://" + source
+            } else {
+                fileUrl = "file:///" + source
+            }
+        }
+        Qt.openUrlExternally(encodeURI(fileUrl))
+    }
+
     function dateTimeParts(value) {
         const source = (value || "").trim()
         let date = source === "" ? new Date() : new Date(source.replace(" ", "T"))
@@ -181,7 +299,7 @@ Window {
     property int editTaskPriority: 1
     property int editTaskCategoryIndex: 0
     property bool editTaskCompleted: false
-    property string detailDateTimeField: "start"
+    property string pendingAttachmentReplacePath: ""
     property var defaultUserSettings: DatabaseManager.defaultUserSettings()
     property bool showDetailAuthor: defaultUserSettings.showDetailAuthor
     property bool showDetailCreatedDate: defaultUserSettings.showDetailCreatedDate
@@ -191,6 +309,7 @@ Window {
     property bool ganttBlueTaskBars: defaultUserSettings.ganttBlueTaskBars
     property bool ganttBlueTodayColumn: defaultUserSettings.ganttBlueTodayColumn
     property bool ganttBlueGridLines: defaultUserSettings.ganttBlueGridLines
+    property bool ganttBlueTheme: ganttBlueTaskBars && ganttBlueTodayColumn && ganttBlueGridLines
     property bool homeDarkMode: false
     property string backgroundImageSource: defaultUserSettings.backgroundImageSource
     property int navFontSize: defaultUserSettings.navFontSize
@@ -223,6 +342,11 @@ Window {
     onGanttBlueTaskBarsChanged: persistUserSettings()
     onGanttBlueTodayColumnChanged: persistUserSettings()
     onGanttBlueGridLinesChanged: persistUserSettings()
+    onGanttBlueThemeChanged: {
+        if (ganttBlueTaskBars !== ganttBlueTheme) ganttBlueTaskBars = ganttBlueTheme
+        if (ganttBlueTodayColumn !== ganttBlueTheme) ganttBlueTodayColumn = ganttBlueTheme
+        if (ganttBlueGridLines !== ganttBlueTheme) ganttBlueGridLines = ganttBlueTheme
+    }
 
     width: self_width * 0.6
     height: self_height * 0.6
@@ -963,8 +1087,21 @@ Window {
     FileDialog {
         id: detailAttachmentDialog
         title: "选择附件文件"
-        fileMode: FileDialog.OpenFile
-        onAccepted: editTaskContent = mainWindow.normalizeSelectedFile(selectedFile)
+        fileMode: pendingAttachmentReplacePath === "" ? FileDialog.OpenFiles : FileDialog.OpenFile
+        onAccepted: {
+            if (pendingAttachmentReplacePath !== "") {
+                const filePath = mainWindow.normalizeSelectedFile(selectedFile)
+                editTaskContent = mainWindow.replaceAttachmentInContent(editTaskContent, pendingAttachmentReplacePath, filePath)
+            } else {
+                const files = selectedFiles || []
+                for (let i = 0; i < files.length; ++i) {
+                    editTaskContent = mainWindow.appendAttachmentToContent(editTaskContent, mainWindow.normalizeSelectedFile(files[i]))
+                }
+            }
+            pendingAttachmentReplacePath = ""
+            mainWindow.saveSelectedTaskEdits()
+        }
+        onRejected: pendingAttachmentReplacePath = ""
     }
 
     Rectangle {
@@ -1650,10 +1787,20 @@ Window {
                                             tFunc: mainWindow.t
                                             contentIsImageFunc: mainWindow.contentIsImage
                                             contentIsFileFunc: mainWindow.contentIsFile
+                                            selectedFileNameFunc: mainWindow.selectedFileName
                                             onOutlineEdited: function(value) { mainWindow.editTaskOutline = value }
                                             onEditingFinished: mainWindow.saveSelectedTaskEdits()
                                             onContentEdited: function(value) { mainWindow.editTaskContent = value }
                                             onCompletedEdited: function(value) { mainWindow.editTaskCompleted = value; mainWindow.saveSelectedTaskEdits() }
+                                            onUploadFileRequested: function(replacePath) {
+                                                mainWindow.pendingAttachmentReplacePath = replacePath || ""
+                                                detailAttachmentDialog.open()
+                                            }
+                                            onOpenFileRequested: function(path) { mainWindow.openLocalFile(path) }
+                                            onRemoveAttachmentRequested: function(path) {
+                                                mainWindow.editTaskContent = mainWindow.removeAttachmentFromContent(mainWindow.editTaskContent, path)
+                                                mainWindow.saveSelectedTaskEdits()
+                                            }
                                         }
 
 
@@ -1727,9 +1874,7 @@ Window {
                     showDetailStartDate: mainWindow.showDetailStartDate
                     showDetailDueDate: mainWindow.showDetailDueDate
                     showDetailPriority: mainWindow.showDetailPriority
-                    ganttBlueTaskBars: mainWindow.ganttBlueTaskBars
-                    ganttBlueTodayColumn: mainWindow.ganttBlueTodayColumn
-                    ganttBlueGridLines: mainWindow.ganttBlueGridLines
+                    ganttBlueTheme: mainWindow.ganttBlueTheme
                     onBackgroundImageSourceChanged: {
                         mainWindow.backgroundImageSource = backgroundImageSource
                         mainWindow.persistUserSettings()
@@ -1770,16 +1915,8 @@ Window {
                         mainWindow.showDetailPriority = showDetailPriority
                         mainWindow.persistUserSettings()
                     }
-                    onGanttBlueTaskBarsChanged: {
-                        mainWindow.ganttBlueTaskBars = ganttBlueTaskBars
-                        mainWindow.persistUserSettings()
-                    }
-                    onGanttBlueTodayColumnChanged: {
-                        mainWindow.ganttBlueTodayColumn = ganttBlueTodayColumn
-                        mainWindow.persistUserSettings()
-                    }
-                    onGanttBlueGridLinesChanged: {
-                        mainWindow.ganttBlueGridLines = ganttBlueGridLines
+                    onGanttBlueThemeChanged: {
+                        mainWindow.ganttBlueTheme = ganttBlueTheme
                         mainWindow.persistUserSettings()
                     }
                     onLogoutRequested: AuthManager.logout()

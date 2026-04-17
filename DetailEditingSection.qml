@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import Qt5Compat.GraphicalEffects
 
 ColumnLayout {
     id: root
@@ -19,14 +20,181 @@ ColumnLayout {
     property var tFunc
     property var contentIsImageFunc
     property var contentIsFileFunc
+    property var selectedFileNameFunc
     property int pendingFocusIndex: -1
     signal outlineEdited(string value)
     signal editingFinished()
     signal contentEdited(string value)
     signal completedEdited(bool value)
+    signal uploadFileRequested(string replacePath)
+    signal openFileRequested(string path)
+    signal removeAttachmentRequested(string path)
+
+    property bool attachmentMenuPinned: false
+    property real attachmentMenuTargetX: 0
+    property real attachmentMenuTargetY: 0
+    property real attachmentCopyToastTargetX: 0
+    property real attachmentCopyToastTargetY: 0
+    property string activeAttachmentPath: ""
+    property string copiedAttachmentPath: ""
+    property var activeAttachmentMenuAnchor: null
+
+    function showAttachmentMenu(anchor, attachmentPath) {
+        attachmentMenuHideTimer.stop()
+        const nextPath = (attachmentPath || "").trim()
+        activeAttachmentMenuAnchor = anchor || null
+        activeAttachmentPath = nextPath
+        if (attachmentOptionsPopup.parent && activeAttachmentMenuAnchor) {
+            const point = activeAttachmentMenuAnchor.mapToItem(attachmentOptionsPopup.parent, activeAttachmentMenuAnchor.width - attachmentOptionsPopup.width, activeAttachmentMenuAnchor.height + 2)
+            attachmentMenuTargetX = Math.max(8, point.x)
+            attachmentMenuTargetY = Math.max(8, point.y)
+        }
+
+        if (attachmentOptionsPopup.visible) {
+            attachmentMenuContent.opacity = 1
+            attachmentOptionsPopup.x = attachmentMenuTargetX
+            attachmentOptionsPopup.y = attachmentMenuTargetY
+            return
+        }
+
+        attachmentOptionsPopup.x = attachmentMenuTargetX
+        attachmentOptionsPopup.y = attachmentMenuTargetY
+        attachmentMenuContent.opacity = 0
+        attachmentOptionsPopup.open()
+    }
+
+    function copyAttachmentPath(path) {
+        const targetPath = ((path || activeAttachmentPath || "") + "").trim()
+        if (targetPath === "") {
+            return
+        }
+        attachmentClipboardProxy.text = targetPath
+        attachmentClipboardProxy.selectAll()
+        attachmentClipboardProxy.copy()
+        attachmentClipboardProxy.deselect()
+        copiedAttachmentPath = targetPath
+        showAttachmentCopiedToast()
+    }
+
+    function showAttachmentCopiedToast() {
+        attachmentCopyToastTimer.stop()
+        if (attachmentCopiedToast.parent && activeAttachmentMenuAnchor) {
+            if (attachmentOptionsPopup.visible) {
+                attachmentCopyToastTargetX = attachmentOptionsPopup.x + attachmentOptionsPopup.width - attachmentCopiedToast.width
+                attachmentCopyToastTargetY = attachmentOptionsPopup.y + attachmentOptionsPopup.height + 8
+            } else {
+                const point = activeAttachmentMenuAnchor.mapToItem(attachmentCopiedToast.parent, activeAttachmentMenuAnchor.width - attachmentCopiedToast.width, activeAttachmentMenuAnchor.height + 8)
+                attachmentCopyToastTargetX = point.x
+                attachmentCopyToastTargetY = point.y
+            }
+            attachmentCopiedToast.x = Math.max(8, attachmentCopyToastTargetX)
+            attachmentCopiedToast.y = Math.max(8, attachmentCopyToastTargetY)
+        }
+        attachmentCopiedToast.opacity = 0
+        attachmentCopiedToast.x = Math.max(8, attachmentCopyToastTargetX)
+        attachmentCopiedToast.y = Math.max(8, attachmentCopyToastTargetY)
+        attachmentCopiedToast.open()
+        attachmentCopyToastTimer.restart()
+    }
+
+    function scheduleAttachmentMenuHide() {
+        if (!attachmentMenuPinned) {
+            attachmentMenuHideTimer.restart()
+        }
+    }
+
+    function attachmentPathsFromContent(content) {
+        const source = ((content || "") + "").replace(/\r/g, "")
+        const matches = source.match(/^\s*(\[\[attachment:.+\]\]\s*)+/)
+        if (!matches) {
+            const trimmed = source.trim()
+            return root.contentIsFileFunc(trimmed) ? [trimmed] : []
+        }
+
+        const attachmentLines = matches[0].match(/\[\[attachment:(.+?)\]\]/g) || []
+        const paths = []
+        for (let i = 0; i < attachmentLines.length; ++i) {
+            const lineMatch = attachmentLines[i].match(/^\[\[attachment:(.+)\]\]$/)
+            if (lineMatch && (lineMatch[1] || "").trim() !== "") {
+                paths.push((lineMatch[1] || "").trim())
+            }
+        }
+        return paths
+    }
+
+    function attachmentPathFromContent(content) {
+        const paths = attachmentPathsFromContent(content)
+        return paths.length > 0 ? paths[0] : ""
+    }
+
+    function bodyTextFromContent(content) {
+        const source = ((content || "") + "").replace(/\r/g, "")
+        const trimmed = source.trim()
+        if (trimmed === "") {
+            return ""
+        }
+
+        const matches = source.match(/^\s*(\[\[attachment:.+\]\]\s*)+/)
+        if (matches) {
+            return source.slice(matches[0].length).replace(/^\n+/, "")
+        }
+        return root.contentIsFileFunc(trimmed) ? "" : source
+    }
+
+    function composeContent(bodyText, attachmentPaths) {
+        const body = ((bodyText || "") + "").replace(/\r/g, "").replace(/[ \t\n]+$/, "")
+        const paths = attachmentPaths || []
+        const normalizedPaths = []
+        for (let i = 0; i < paths.length; ++i) {
+            const path = ((paths[i] || "") + "").trim()
+            if (path !== "") {
+                normalizedPaths.push(path)
+            }
+        }
+        if (normalizedPaths.length === 0) {
+            return body
+        }
+        const attachmentBlock = normalizedPaths.map(function(path) {
+            return "[[attachment:" + path + "]]"
+        }).join("\n")
+        return body === "" ? attachmentBlock : attachmentBlock + "\n\n" + body
+    }
+
+    function appendAttachmentPath(content, attachmentPath) {
+        const paths = attachmentPathsFromContent(content)
+        const path = ((attachmentPath || "") + "").trim()
+        if (path === "") {
+            return content
+        }
+        paths.push(path)
+        return composeContent(bodyTextFromContent(content), paths)
+    }
+
+    function removeAttachmentPath(content, attachmentPath) {
+        const path = ((attachmentPath || "") + "").trim()
+        const paths = attachmentPathsFromContent(content).filter(function(item) {
+            return item !== path
+        })
+        return composeContent(bodyTextFromContent(content), paths)
+    }
+
+    function attachmentIconForPath(path) {
+        const source = ((path || "") + "").trim().toLowerCase()
+        if (/\.(png|jpg|jpeg|gif|bmp|webp|svg|ico|heic)$/.test(source)) return "🖼"
+        if (/\.(pdf)$/.test(source)) return "📕"
+        if (/\.(doc|docx|odt|rtf|pages)$/.test(source)) return "📘"
+        if (/\.(xls|xlsx|csv|ods)$/.test(source)) return "📗"
+        if (/\.(ppt|pptx|key)$/.test(source)) return "📙"
+        if (/\.(zip|rar|7z|tar|gz|bz2|xz)$/.test(source)) return "🗜"
+        if (/\.(mp3|wav|flac|aac|ogg|m4a)$/.test(source)) return "🎵"
+        if (/\.(mp4|mkv|mov|avi|wmv|webm)$/.test(source)) return "🎬"
+        if (/\.(txt|md|json|xml|yml|yaml|ini|cfg|log)$/.test(source)) return "📄"
+        if (/\.(exe|msi|apk|dmg|app)$/.test(source)) return "⚙"
+        return "📎"
+    }
 
     function checklistItemsFromContent(content) {
-        const lines = ((content || "") + "").replace(/\r/g, "").split("\n")
+        const lines = (bodyTextFromContent(content) + "").replace(/\r/g, "").split("\n")
         const items = []
         for (let i = 0; i < lines.length; ++i) {
             const raw = lines[i]
@@ -53,24 +221,24 @@ ColumnLayout {
         const items = checklistItemsFromContent(editTaskContent)
         if (index < 0 || index >= items.length) return
         items[index].completed = !items[index].completed
-        contentEdited(checklistContentFromItems(items))
+        contentEdited(composeContent(checklistContentFromItems(items), attachmentPathsFromContent(editTaskContent)))
     }
     function updateChecklistItemText(index, value) {
         const items = checklistItemsFromContent(editTaskContent)
         if (index < 0 || index >= items.length) return
         items[index].text = value
-        contentEdited(checklistContentFromItems(items))
+        contentEdited(composeContent(checklistContentFromItems(items), attachmentPathsFromContent(editTaskContent)))
     }
     function removeChecklistItem(index) {
         const items = checklistItemsFromContent(editTaskContent)
         if (index < 0 || index >= items.length) return
         items.splice(index, 1)
-        contentEdited(checklistContentFromItems(items))
+        contentEdited(composeContent(checklistContentFromItems(items), attachmentPathsFromContent(editTaskContent)))
     }
     function appendChecklistItem() {
-        const source = ((editTaskContent || "") + "").replace(/\r/g, "")
+        const source = bodyTextFromContent(editTaskContent)
         pendingFocusIndex = checklistItemsFromContent(editTaskContent).length
-        contentEdited(source === "" ? "[ ] " : source + "\n[ ] ")
+        contentEdited(composeContent(source === "" ? "[ ] " : source + "\n[ ] ", attachmentPathsFromContent(editTaskContent)))
     }
     function createChecklistItemAfter(index, value) {
         const items = checklistItemsFromContent(editTaskContent)
@@ -78,12 +246,315 @@ ColumnLayout {
         items[index].text = value
         items.splice(index + 1, 0, { completed: false, text: "" })
         pendingFocusIndex = index + 1
-        contentEdited(checklistContentFromItems(items) + "\n[ ] ")
+        contentEdited(composeContent(checklistContentFromItems(items) + "\n[ ] ", attachmentPathsFromContent(editTaskContent)))
     }
 
     visible: visibleSection
     Layout.fillWidth: true
     spacing: 4
+
+    Timer {
+        id: attachmentMenuHideTimer
+        interval: 160
+        repeat: false
+        onTriggered: {
+            if (!attachmentMenuMouseArea.containsMouse
+                    && !attachmentCopyArea.containsMouse
+                    && !attachmentUploadArea.containsMouse
+                    && !attachmentDeleteArea.containsMouse
+                    && !attachmentMenuPinned) {
+                attachmentOptionsPopup.close()
+            }
+        }
+    }
+
+    Timer {
+        id: attachmentCopyToastTimer
+        interval: 1100
+        repeat: false
+        onTriggered: attachmentCopiedToast.close()
+    }
+
+    Popup {
+        id: attachmentCopiedToast
+        parent: Overlay.overlay
+        modal: false
+        focus: false
+        padding: 0
+        closePolicy: Popup.NoAutoClose
+        width: Math.min(root.width - 16, Math.max(copiedToastColumn.implicitWidth + 30, 180))
+        height: copiedToastColumn.implicitHeight + 22
+        opacity: 1
+
+        enter: Transition {
+            NumberAnimation { target: attachmentCopiedToast; property: "opacity"; from: 0; to: 1; duration: 110; easing.type: Easing.OutCubic }
+        }
+
+        exit: Transition {
+            NumberAnimation { target: attachmentCopiedToast; property: "opacity"; from: attachmentCopiedToast.opacity; to: 0; duration: 110; easing.type: Easing.InCubic }
+        }
+
+        background: Rectangle {
+            radius: 12
+            color: root.homeDarkMode ? "#1f2937" : "#0f172a"
+            opacity: 0.94
+        }
+
+        contentItem: Column {
+            id: copiedToastColumn
+            spacing: 4
+
+            Text {
+                id: copiedToastLabel
+                text: root.tFunc("已复制", "Copied")
+                color: "#f8fafc"
+                font.pixelSize: Math.max(13, root.detailFontSize - 6)
+                font.bold: true
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+
+            Text {
+                width: attachmentCopiedToast.width - 30
+                text: root.copiedAttachmentPath
+                color: "#cbd5e1"
+                font.pixelSize: Math.max(11, root.detailFontSize - 8)
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                elide: Text.ElideMiddle
+            }
+        }
+    }
+
+    Popup {
+        id: attachmentOptionsPopup
+        parent: Overlay.overlay
+        modal: false
+        focus: false
+        padding: 0
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        width: 168
+        height: attachmentMenuColumn.implicitHeight + 12
+
+        Behavior on x {
+            NumberAnimation { duration: 110; easing.type: Easing.OutCubic }
+        }
+
+        Behavior on y {
+            NumberAnimation { duration: 110; easing.type: Easing.OutCubic }
+        }
+
+        enter: Transition {
+            NumberAnimation { target: attachmentMenuContent; property: "opacity"; from: 0; to: 1; duration: 90; easing.type: Easing.OutCubic }
+        }
+
+        exit: Transition {
+            NumberAnimation { target: attachmentMenuContent; property: "opacity"; from: attachmentMenuContent.opacity; to: 0; duration: 70; easing.type: Easing.InCubic }
+        }
+
+        background: Rectangle {
+            radius: 12
+            color: root.homeDarkMode ? "#f8fafc" : "#ffffff"
+            border.color: root.homeDarkMode ? "#cbd5e1" : "#d8dee8"
+            border.width: 1
+            layer.enabled: true
+            layer.smooth: true
+            layer.effect: DropShadow {
+                transparentBorder: true
+                color: root.homeDarkMode ? "#1a000000" : "#120f172a"
+                radius: 6
+                samples: 16
+                horizontalOffset: 0
+                verticalOffset: 1
+            }
+        }
+
+        contentItem: Column {
+            id: attachmentMenuContent
+            opacity: 1
+
+            Column {
+                id: attachmentMenuColumn
+                spacing: 0
+                padding: 6
+
+            Rectangle {
+                width: parent.width
+                height: 34
+                radius: 8
+                color: attachmentCopyArea.containsMouse ? (root.homeDarkMode ? "#dde7f3" : "#eef4ff") : "transparent"
+
+                Behavior on color {
+                    ColorAnimation { duration: 140 }
+                }
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    spacing: 10
+                    Text {
+                        text: "📋"
+                        font.pixelSize: 14
+                        Layout.preferredWidth: 20
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: root.tFunc("复制地址", "Copy path")
+                        color: "#0f172a"
+                        font.pixelSize: Math.max(12, root.detailFontSize - 7)
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
+                }
+
+                MouseArea {
+                    id: attachmentCopyArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onEntered: attachmentMenuHideTimer.stop()
+                    onExited: root.scheduleAttachmentMenuHide()
+                    onClicked: {
+                        root.copyAttachmentPath(root.activeAttachmentPath)
+                        attachmentMenuPinned = false
+                        attachmentOptionsPopup.close()
+                    }
+                }
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: root.homeDarkMode ? "#d7e0ea" : "#edf2f7"
+                opacity: 0.75
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 34
+                radius: 8
+                color: attachmentUploadArea.containsMouse ? (root.homeDarkMode ? "#dde7f3" : "#eef4ff") : "transparent"
+
+                Behavior on color {
+                    ColorAnimation { duration: 140 }
+                }
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    spacing: 10
+                    Text {
+                        text: "⤴"
+                        font.pixelSize: 14
+                        Layout.preferredWidth: 20
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: root.tFunc("重新上传", "Upload again")
+                        color: "#0f172a"
+                        font.pixelSize: Math.max(12, root.detailFontSize - 7)
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
+                }
+
+                MouseArea {
+                    id: attachmentUploadArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onEntered: attachmentMenuHideTimer.stop()
+                    onExited: root.scheduleAttachmentMenuHide()
+                    onClicked: {
+                        root.uploadFileRequested(root.activeAttachmentPath)
+                        attachmentMenuPinned = false
+                        attachmentOptionsPopup.close()
+                    }
+                }
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 1
+                color: root.homeDarkMode ? "#d7e0ea" : "#edf2f7"
+                opacity: 0.75
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 34
+                radius: 8
+                color: attachmentDeleteArea.containsMouse ? "#fee2e2" : "transparent"
+
+                Behavior on color {
+                    ColorAnimation { duration: 140 }
+                }
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    spacing: 10
+                    Text {
+                        text: "🗑"
+                        font.pixelSize: 14
+                        Layout.preferredWidth: 20
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: root.tFunc("删除附件", "Remove attachment")
+                        color: attachmentDeleteArea.containsMouse ? "#991b1b" : "#b91c1c"
+                        font.pixelSize: Math.max(12, root.detailFontSize - 7)
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
+                    }
+                }
+
+                MouseArea {
+                    id: attachmentDeleteArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onEntered: attachmentMenuHideTimer.stop()
+                    onExited: root.scheduleAttachmentMenuHide()
+                    onClicked: {
+                        root.removeAttachmentRequested(root.activeAttachmentPath)
+                        attachmentMenuPinned = false
+                        attachmentOptionsPopup.close()
+                    }
+                }
+            }
+            }
+        }
+
+        MouseArea {
+            id: attachmentMenuMouseArea
+            anchors.fill: parent
+            hoverEnabled: true
+            acceptedButtons: Qt.NoButton
+            onEntered: attachmentMenuHideTimer.stop()
+            onExited: root.scheduleAttachmentMenuHide()
+            z: -1
+        }
+
+        onClosed: {
+            attachmentMenuPinned = false
+            attachmentMenuHideTimer.stop()
+            attachmentMenuContent.opacity = 1
+            activeAttachmentPath = ""
+            activeAttachmentMenuAnchor = null
+        }
+    }
+
+    TextArea {
+        id: attachmentClipboardProxy
+        visible: false
+        width: 0
+        height: 0
+        text: ""
+    }
 
     Rectangle {
         Layout.fillWidth: true
@@ -103,6 +574,13 @@ ColumnLayout {
                 Rectangle { width: 3; height: 24; radius: 1.5; color: root.detailAccentColor }
                 Label { text: qsTr("概要"); color: root.detailTextColor; font.pixelSize: Math.max(13, root.detailFontSize - 5); font.bold: true }
                 Label { text: qsTr("支持修改摘要说明，正文为空时会自动复用概要"); color: root.detailHintTextColor; font.pixelSize: Math.max(11, root.detailFontSize - 8) }
+                Item { Layout.fillWidth: true }
+                Button {
+                    text: root.tFunc("上传文件", "Upload file")
+                    implicitHeight: 30
+                    implicitWidth: 96
+                    onClicked: root.uploadFileRequested("")
+                }
             }
             TextArea {
                 Layout.fillWidth: true
@@ -128,7 +606,7 @@ ColumnLayout {
     Rectangle {
         Layout.fillWidth: true
         implicitHeight: checklistSection.implicitHeight + 16
-        visible: !root.contentIsImageFunc(root.editTaskContent) && !root.contentIsFileFunc(root.editTaskContent)
+        visible: !root.contentIsImageFunc(bodyTextFromContent(root.editTaskContent))
         radius: 12
         color: root.homeDarkMode ? "#313b47" : "#fbfdff"
         border.color: root.detailBorderColor
@@ -230,6 +708,130 @@ ColumnLayout {
                 }
                 contentItem: Text { text: parent.text; color: root.detailHintTextColor; font.pixelSize: Math.max(12, root.detailFontSize - 6); horizontalAlignment: Text.AlignLeft; verticalAlignment: Text.AlignVCenter }
                 background: Rectangle { color: "transparent" }
+            }
+        }
+    }
+
+    Rectangle {
+        Layout.fillWidth: true
+        implicitHeight: fileSection.implicitHeight + 16
+        visible: root.attachmentPathsFromContent(root.editTaskContent).length > 0
+        radius: 12
+        color: root.homeDarkMode ? "#313b47" : "#fbfdff"
+        border.color: root.detailBorderColor
+        border.width: 1
+
+        ColumnLayout {
+            id: fileSection
+            anchors.fill: parent
+            anchors.margins: 10
+            spacing: 8
+
+            Repeater {
+                model: root.attachmentPathsFromContent(root.editTaskContent)
+                delegate: Rectangle {
+                    required property string modelData
+                    Layout.fillWidth: true
+                    implicitHeight: attachmentRow.implicitHeight + 8
+                    radius: 10
+                    color: root.homeDarkMode ? "#2f3742" : "#f8fafc"
+                    border.color: root.detailBorderColor
+                    border.width: 1
+
+                    RowLayout {
+                        id: attachmentRow
+                        anchors.fill: parent
+                        anchors.margins: 8
+                        spacing: 8
+
+                        Rectangle { width: 3; height: 24; radius: 1.5; color: root.detailAccentColor }
+                        Text {
+                            text: root.attachmentIconForPath(modelData)
+                            font.pixelSize: 16
+                            Layout.preferredWidth: 22
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        Label {
+                            Layout.fillWidth: true
+                            text: root.selectedFileNameFunc ? root.selectedFileNameFunc(modelData) : modelData
+                            color: fileTitleArea.containsMouse ? root.detailAccentColor : root.detailTextColor
+                            font.pixelSize: Math.max(13, root.detailFontSize - 5)
+                            font.bold: true
+                            elide: Text.ElideMiddle
+
+                            Behavior on color {
+                                ColorAnimation { duration: 120 }
+                            }
+
+                            MouseArea {
+                                id: fileTitleArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.openFileRequested(modelData)
+                            }
+                        }
+
+                        Item {
+                            id: attachmentMenuAnchor
+                            Layout.preferredWidth: 36
+                            Layout.preferredHeight: 30
+
+                            Button {
+                                id: attachmentOptionsButton
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                text: "⋯"
+                                font.pixelSize: 18
+                                onClicked: {
+                                    attachmentMenuHideTimer.stop()
+                                    if (attachmentOptionsPopup.visible && root.activeAttachmentPath === modelData && attachmentMenuPinned) {
+                                        attachmentMenuPinned = false
+                                        attachmentOptionsPopup.close()
+                                    } else {
+                                        attachmentMenuPinned = true
+                                        root.showAttachmentMenu(attachmentMenuAnchor, modelData)
+                                    }
+                                }
+                                onHoveredChanged: {
+                                    if (hovered) {
+                                        attachmentMenuHideTimer.stop()
+                                        root.showAttachmentMenu(attachmentMenuAnchor, modelData)
+                                    } else {
+                                        root.scheduleAttachmentMenuHide()
+                                    }
+                                }
+                                background: Rectangle {
+                                    radius: 10
+                                    color: attachmentOptionsPopup.visible && root.activeAttachmentPath === modelData ? (root.homeDarkMode ? "#2f3c4e" : "#dbeafe") : (parent.hovered ? (root.homeDarkMode ? "#3b4250" : "#e2e8f0") : "transparent")
+                                    border.color: attachmentOptionsPopup.visible && root.activeAttachmentPath === modelData ? (root.homeDarkMode ? "#93c5fd" : "#60a5fa") : (parent.hovered ? (root.homeDarkMode ? "#64748b" : "#bfdbfe") : "transparent")
+                                    border.width: attachmentOptionsPopup.visible && root.activeAttachmentPath === modelData ? 1.5 : (parent.hovered ? 1 : 0)
+
+                                    Behavior on color {
+                                        ColorAnimation { duration: 140 }
+                                    }
+
+                                    Behavior on border.color {
+                                        ColorAnimation { duration: 140 }
+                                    }
+                                }
+                                contentItem: Text {
+                                    text: parent.text
+                                    color: attachmentOptionsPopup.visible && root.activeAttachmentPath === modelData ? (root.homeDarkMode ? "#dbeafe" : "#2563eb") : root.detailHintTextColor
+                                    font.pixelSize: parent.font.pixelSize
+                                    font.bold: true
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+
+                                    Behavior on color {
+                                        ColorAnimation { duration: 140 }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
