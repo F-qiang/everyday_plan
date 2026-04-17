@@ -2023,7 +2023,11 @@ Window {
                     onChooseBackupDirectoryRequested: backupFolderDialog.open()
                     onBackupNowRequested: mainWindow.runBackupExport()
                     onRestoreBackupRequested: restoreBackupDialog.open()
-                    onDisplayNameEdited: {
+                    onDisplayNameEdited: function(value) {
+                        if (AuthManager.isLoggedIn) {
+                            AuthManager.updateCurrentUserNickname(value)
+                        }
+                    }
                 }
 
                 NewTaskDialog {
@@ -2171,4 +2175,3 @@ Window {
     }
 }
 
-}
