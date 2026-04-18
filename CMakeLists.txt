@@ -34,6 +34,8 @@ qt_add_qml_module(appeveryday_day
         CategoryListPanel.qml
         MainNavToolButton.qml
         MainSidebar.qml
+        MainMiddlePanel.qml
+        MainRightShell.qml
         DetailHeaderBar.qml
         EmptyDetailState.qml
         DetailMetaSection.qml
@@ -80,3 +82,4 @@ install(TARGETS appeveryday_day
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+

@@ -1,4 +1,4 @@
-// 主窗口 - 整合登录和甘特图功能
+﻿// 主窗口 - 整合登录和甘特图功能
 import QtQuick
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 2.15
@@ -1193,131 +1193,34 @@ Window {
                                                                        ? Math.min(Math.max(splitListMinimumWidth, Math.min(360, width * 0.31)), Math.max(splitListMinimumWidth, width - activeRightMinimumWidth))
                                                                        : Math.min(Math.max(splitListMinimumWidth, Math.min(340, width * 0.34)), Math.max(splitListMinimumWidth, width - activeRightMinimumWidth)))
 
-        Rectangle {
+        MainMiddlePanel {
             id: middlePanel
             x: 0
             width: contentArea.targetMiddleWidth
-            height: parent.height
-            visible: true
-            color: pageBaseColor
-            clip: true
-
-            Behavior on width {
-                NumberAnimation { duration: 260; easing.type: Easing.InOutQuad }
-            }
-
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: 8
-                spacing: 8
-
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 44
-                    radius: 12
-                    color: homeDarkMode ? "#3a4049" : "#ffffff"
-                    border.color: homeDarkMode ? "#4b5563" : "#d8dee8"
-                    border.width: 1
-                    visible: middlePanel.width > 0
-
-                    readonly property bool abstractVisible: !contentArea.ganttMode && !settingsVisible
-
-                    MouseArea {
-                        anchors.fill: parent
-                        enabled: false
-                        cursorShape: Qt.ArrowCursor
-                    }
-
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.margins: 12
-                        spacing: 10
-
-                        Label {
-                            text: pageTitleText()
-                            color: homeDarkMode ? "#f3f4f6" : "#0f172a"
-                            font.pixelSize: 18
-                            font.bold: true
-                        }
-
-                        Label {
-                            visible: parent.parent.abstractVisible
-                            text: t("可直接点击标题选择任务", "Click a title to select a task")
-                            color: detailHintTextColor
-                            font.pixelSize: 12
-                        }
-
-                        Item { Layout.fillWidth: true }
-                    }
-                }
-
-                AbstractContents {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    visible: !contentArea.ganttMode && !settingsVisible
-                    searchKeyword: leftSidebar.searchText
-                    selectedCategoryId: mainWindow.activeCategoryId
-                    onItemSelected: (taskId, title, outline, content, time, startDate, author, createdAt, dueDate, priority, categoryId, categoryName, categoryColor, completed) =>
-                                        mainWindow.openTaskDetail(taskId, title, outline, content, time, startDate, author, createdAt, dueDate, priority, categoryId, categoryName, categoryColor, completed)
-                }
-            }
+            pageBaseColor: pageBaseColor
+            homeDarkMode: mainWindow.homeDarkMode
+            ganttMode: contentArea.ganttMode
+            settingsVisible: mainWindow.settingsVisible
+            pageTitle: pageTitleText()
+            detailHintTextColor: mainWindow.detailHintTextColor
+            searchKeyword: leftSidebar.searchText
+            selectedCategoryId: mainWindow.activeCategoryId
+            onItemSelected: (taskId, title, outline, content, time, startDate, author, createdAt, dueDate, priority, categoryId, categoryName, categoryColor, completed) =>
+                                mainWindow.openTaskDetail(taskId, title, outline, content, time, startDate, author, createdAt, dueDate, priority, categoryId, categoryName, categoryColor, completed)
         }
 
-        Rectangle {
+        MainRightShell {
             id: rightPanel
             x: middlePanel.width
             width: Math.max(contentArea.activeRightMinimumWidth, parent.width - middlePanel.width)
             height: parent.height
-            visible: true
-            color: pageBaseColor
-            clip: true
-
-            Rectangle {
-                anchors.left: parent.left
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                width: 1
-                color: homeDarkMode ? "#5b6471" : "#d2dae4"
-                opacity: 1
-                z: 3
-            }
-
-            Rectangle {
-                anchors.left: parent.left
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                width: 14
-                color: homeDarkMode ? "#0f172a" : "#94a3b8"
-                opacity: homeDarkMode ? 0.14 : 0.08
-                z: 2
-            }
-
-            Image {
-                anchors.fill: parent
-                source: backgroundImageSource
-                fillMode: Image.PreserveAspectCrop
-                visible: backgroundImageSource !== ""
-                opacity: homeDarkMode ? 0.18 : 0.28
-            }
-
-            Rectangle {
-                anchors.fill: parent
-                color: pageBaseColor
-                opacity: backgroundImageSource === "" ? 1 : 0.86
-            }
-
-            Behavior on x {
-                NumberAnimation { duration: 260; easing.type: Easing.InOutQuad }
-            }
-            Behavior on width {
-                NumberAnimation { duration: 260; easing.type: Easing.InOutQuad }
-            }
-
+            pageBaseColor: pageBaseColor
+            homeDarkMode: mainWindow.homeDarkMode
+            backgroundImageSource: mainWindow.backgroundImageSource
 
             StackLayout {
                 anchors.fill: parent
                 currentIndex: settingsVisible ? 1 : (newCategoryVisible ? 3 : (newTaskVisible ? 2 : (contentArea.ganttMode ? 4 : 0)))
-
                 Rectangle {
                     color: pageBaseColor
 
@@ -1505,7 +1408,6 @@ Window {
                                             }
                                         }
 
-
                                         DetailMetaSection {
                                             visibleSection: detailVisible
                                             showTitleEditor: false
@@ -1559,7 +1461,6 @@ Window {
                         }
                     }
                 }
-
                 SettingsPanel {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -1778,4 +1679,6 @@ Window {
         }
     }
 }
+
+
 
