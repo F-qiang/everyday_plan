@@ -107,7 +107,6 @@ bool AbstractContentsModel::loadAllFromDatabase(const QString &dbPath, bool toda
     }
 
     if (!db.open()) {
-        qDebug() << "[AbstractContentsModel] 数据库打开失败：" << db.lastError().text();
         endResetModel();
         return false;
     }
@@ -159,7 +158,6 @@ bool AbstractContentsModel::loadAllFromDatabase(const QString &dbPath, bool toda
     sql += " ORDER BY " + orderColumn + " " + direction + ", Tasks.priority DESC, Tasks.created_at DESC, Tasks.task_id DESC";
 
     if (!query.exec(sql)) {
-        qDebug() << "[AbstractContentsModel] 遍历 Tasks 数据失败：" << query.lastError().text();
         db.close();
         endResetModel();
         return false;

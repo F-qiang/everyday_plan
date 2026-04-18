@@ -93,7 +93,6 @@ bool DatabaseManager::migrateFromOldVersion()
     if (!taskColumnExists("today_hidden_until")) {
         QSqlQuery alterQuery(m_db);
         if (!alterQuery.exec("ALTER TABLE Tasks ADD COLUMN today_hidden_until TEXT")) {
-            qDebug() << "[DatabaseManager] 添加 Tasks.today_hidden_until 失败:" << alterQuery.lastError().text();
             return false;
         }
     }
@@ -126,13 +125,11 @@ bool DatabaseManager::migrateFromOldVersion()
 
     QSqlQuery reminderMigrateQuery(m_db);
     if (!reminderMigrateQuery.exec("UPDATE Tasks SET reminder_at = today_until WHERE (reminder_at IS NULL OR reminder_at = '') AND today_until IS NOT NULL AND today_until != '' AND strftime('%H:%M:%S', today_until) NOT IN ('00:00:00', '16:00:00')")) {
-        qDebug() << "[DatabaseManager] 迁移 Tasks.reminder_at 失败:" << reminderMigrateQuery.lastError().text();
         return false;
     }
 
     QSqlQuery hiddenCleanupQuery(m_db);
     if (!hiddenCleanupQuery.exec("UPDATE Tasks SET today_hidden_until = NULL WHERE today_hidden_until IS NOT NULL AND today_hidden_until != '' AND datetime(today_hidden_until) <= datetime('now', '+8 hours')")) {
-        qDebug() << "[DatabaseManager] 清理 Tasks.today_hidden_until 失败:" << hiddenCleanupQuery.lastError().text();
         return false;
     }
 

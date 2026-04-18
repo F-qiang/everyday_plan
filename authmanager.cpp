@@ -123,7 +123,6 @@ void AuthManager::requestVerificationCode(const QString &email)
     )").arg(code);
 
     if (sendEmail(email, subject, body)) {
-        qDebug() << "验证码已发送至:" << email;
         emit verificationCodeSent(true, "验证码已发送，请查收邮件");
     } else {
         emit verificationCodeSent(false, m_lastMailError.isEmpty() ? "验证码发送失败，请检查邮箱配置" : m_lastMailError);
@@ -330,7 +329,6 @@ void AuthManager::loginWithCode(const QString &email, const QString &code)
     emit loginStateChanged();
     emit loginResult(true, "登录成功");
     
-    qDebug() << "用户登录成功:" << email << "ID:" << userId;
 }
 
 void AuthManager::logout()

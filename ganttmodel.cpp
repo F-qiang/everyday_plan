@@ -238,7 +238,6 @@ void GanttModel::loadTasks()
     endResetModel();
     emit tasksLoaded(m_tasks.size());
 
-    qDebug() << "甘特图加载了" << m_tasks.size() << "个任务";
 }
 
 void GanttModel::setDateRange(const QDate &start, const QDate &end)
