@@ -203,6 +203,7 @@ Item {
             fontScale: mainWindow.middleCardFontSize
             categoryName: model.categoryName
             categoryColor: model.categoryColor
+            priority: model.priority
             completed: model.completed
             todaySelected: model.todaySelected
 

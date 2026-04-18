@@ -236,27 +236,154 @@ Window {
         }
     }
 
+    function normalizedDetailDateValues() {
+        const now = new Date()
+        const rawYear = Number(detailDateYear.value)
+        const rawMonth = Number(detailDateMonth.value)
+        const rawDay = Number(detailDateDay.value)
+        const rawHour = Number(detailDateHour.value)
+        const rawMinute = Number(detailDateMinute.value)
+
+        const year = Math.max(2020, Math.min(2100, isNaN(rawYear) ? now.getFullYear() : Math.round(rawYear)))
+        const month = Math.max(1, Math.min(12, isNaN(rawMonth) ? (now.getMonth() + 1) : Math.round(rawMonth)))
+        const maxDay = new Date(year, month, 0).getDate()
+        const day = Math.max(1, Math.min(maxDay, isNaN(rawDay) ? now.getDate() : Math.round(rawDay)))
+        const hour = Math.max(0, Math.min(23, isNaN(rawHour) ? now.getHours() : Math.round(rawHour)))
+        const minute = Math.max(0, Math.min(59, isNaN(rawMinute) ? now.getMinutes() : Math.round(rawMinute)))
+
+        return {
+            year: year,
+            month: month,
+            day: day,
+            hour: hour,
+            minute: minute,
+            maxDay: maxDay
+        }
+    }
+
+    function daysInMonth(year, month) {
+        const normalizedYear = Math.max(2020, Math.min(2100, Number(year) || new Date().getFullYear()))
+        const normalizedMonth = Math.max(1, Math.min(12, Number(month) || 1))
+        return new Date(normalizedYear, normalizedMonth, 0).getDate()
+    }
+
+    function clearDetailDateCorrectionFlags() {
+        detailDateYearCorrected = false
+        detailDateMonthCorrected = false
+        detailDateDayCorrected = false
+        detailDateHourCorrected = false
+        detailDateMinuteCorrected = false
+    }
+
+    function focusDetailDateField(fieldName) {
+        if (fieldName === "year") detailDateYear.forceActiveFocus()
+        else if (fieldName === "month") detailDateMonth.forceActiveFocus()
+        else if (fieldName === "day") detailDateDay.forceActiveFocus()
+        else if (fieldName === "hour") detailDateHour.forceActiveFocus()
+        else if (fieldName === "minute") detailDateMinute.forceActiveFocus()
+    }
+
+    function showDetailDateCorrectionFeedback(message, fieldName) {
+        if (message && message !== "") detailDateCorrectionMessage = message
+        detailDateCorrectionNoticeVisible = true
+        if (fieldName && fieldName !== "") {
+            detailDateLastCorrectedField = fieldName
+            focusDetailDateField(fieldName)
+        }
+        detailDateCorrectionTimer.restart()
+    }
+
+    function normalizeDetailDateInputs() {
+        const normalized = normalizedDetailDateValues()
+        let corrected = false
+        let correctionMessage = ""
+        let correctionField = ""
+        if (detailDateYear.value !== normalized.year) {
+            detailDateYear.value = normalized.year
+            detailDateYearCorrected = true
+            corrected = true
+            if (correctionMessage === "") {
+                correctionMessage = "年份已自动修正到有效范围"
+                correctionField = "year"
+            }
+        }
+        if (detailDateMonth.value !== normalized.month) {
+            detailDateMonth.value = normalized.month
+            detailDateMonthCorrected = true
+            corrected = true
+            if (correctionMessage === "") {
+                correctionMessage = "月份已自动修正到 1 - 12"
+                correctionField = "month"
+            }
+        }
+        if (detailDateDay.to !== normalized.maxDay) detailDateDay.to = normalized.maxDay
+        if (detailDateDay.value !== normalized.day) {
+            const targetMonth = normalized.month
+            const targetMaxDay = normalized.maxDay
+            detailDateDay.value = normalized.day
+            detailDateDayCorrected = true
+            corrected = true
+            if (correctionMessage === "") {
+                correctionMessage = targetMonth + " 月最多 " + targetMaxDay + " 日"
+                correctionField = "day"
+            }
+        }
+        if (detailDateHour.value !== normalized.hour) {
+            detailDateHour.value = normalized.hour
+            detailDateHourCorrected = true
+            corrected = true
+            if (correctionMessage === "") {
+                correctionMessage = "小时已自动修正到 0 - 23"
+                correctionField = "hour"
+            }
+        }
+        if (detailDateMinute.value !== normalized.minute) {
+            detailDateMinute.value = normalized.minute
+            detailDateMinuteCorrected = true
+            corrected = true
+            if (correctionMessage === "") {
+                correctionMessage = "分钟已自动修正到 0 - 59"
+                correctionField = "minute"
+            }
+        }
+        if (corrected) showDetailDateCorrectionFeedback(correctionMessage, correctionField)
+        return normalized
+    }
+
+    function clampDetailDateDay() {
+        normalizeDetailDateInputs()
+    }
+
     function openDateTimeEditor(fieldKey) {
         detailDateTimeField = fieldKey
-        const parts = dateTimeParts(fieldKey === "start" ? editTaskStartDate : editTaskDueDate)
+        const parts = dateTimeParts(fieldKey === "start" ? editTaskStartDate : (fieldKey === "reminder" ? editTaskTime : editTaskDueDate))
+        clearDetailDateCorrectionFlags()
+        detailDateCorrectionNoticeVisible = false
+        detailDateCorrectionMessage = ""
+        detailDateLastCorrectedField = ""
         detailDateYear.value = parts.year
         detailDateMonth.value = parts.month
         detailDateDay.value = parts.day
         detailDateHour.value = parts.hour
         detailDateMinute.value = parts.minute
+        normalizeDetailDateInputs()
         detailDatePopup.open()
     }
 
     function applyDetailDateTime() {
-        const value = detailDateYear.value.toString().padStart(4, "0") + "-"
-                    + detailDateMonth.value.toString().padStart(2, "0") + "-"
-                    + detailDateDay.value.toString().padStart(2, "0") + " "
-                    + detailDateHour.value.toString().padStart(2, "0") + ":"
-                    + detailDateMinute.value.toString().padStart(2, "0")
+        const normalized = normalizeDetailDateInputs()
+        const value = normalized.year.toString().padStart(4, "0") + "-"
+                    + normalized.month.toString().padStart(2, "0") + "-"
+                    + normalized.day.toString().padStart(2, "0") + " "
+                    + normalized.hour.toString().padStart(2, "0") + ":"
+                    + normalized.minute.toString().padStart(2, "0")
         if (detailDateTimeField === "start") {
             editTaskStartDate = value
         } else if (detailDateTimeField === "due") {
             editTaskDueDate = value
+        } else if (detailDateTimeField === "reminder") {
+            editTaskTime = value
+            editTaskReminderEnabled = true
         }
     }
 
@@ -297,6 +424,17 @@ Window {
     property string selectedTaskCreatedAt: ""
     property string selectedTaskDueDate: ""
     property int selectedTaskPriority: 1
+    property string detailDateTimeField: "due"
+    property string editTaskTime: ""
+    property bool editTaskReminderEnabled: false
+    property bool detailDateYearCorrected: false
+    property bool detailDateMonthCorrected: false
+    property bool detailDateDayCorrected: false
+    property bool detailDateHourCorrected: false
+    property bool detailDateMinuteCorrected: false
+    property bool detailDateCorrectionNoticeVisible: false
+    property string detailDateCorrectionMessage: ""
+    property string detailDateLastCorrectedField: ""
     property string editTaskTitle: ""
     property string editTaskOutline: ""
     property string editTaskContent: ""
@@ -326,6 +464,19 @@ Window {
     property int detailFontSize: defaultUserSettings.detailFontSize
     property string uiLanguage: defaultUserSettings.uiLanguage
     property string timeDisplayFormat: defaultUserSettings.timeDisplayFormat
+    property var todaySortOptions: [
+        { "label": t("优先级（高到低）", "Priority (High to Low)"), "field": "priority", "descending": true },
+        { "label": t("优先级（低到高）", "Priority (Low to High)"), "field": "priority", "descending": false },
+        { "label": t("创建日期（新到旧）", "Created (Newest First)"), "field": "createdAt", "descending": true },
+        { "label": t("创建日期（旧到新）", "Created (Oldest First)"), "field": "createdAt", "descending": false },
+        { "label": t("结束日期（新到旧）", "Due (Latest First)"), "field": "dueDate", "descending": true },
+        { "label": t("结束日期（旧到新）", "Due (Earliest First)"), "field": "dueDate", "descending": false },
+        { "label": t("开始日期（新到旧）", "Start (Latest First)"), "field": "startDate", "descending": true },
+        { "label": t("开始日期（旧到新）", "Start (Earliest First)"), "field": "startDate", "descending": false }
+    ]
+    property int todaySortIndex: 0
+    readonly property string todaySortField: todaySortOptions[todaySortIndex].field
+    readonly property bool todaySortDescending: todaySortOptions[todaySortIndex].descending
     readonly property color pageBaseColor: homeDarkMode ? "#2f343c" : "#ffffff"
     readonly property color detailSurfaceColor: homeDarkMode ? "#323841" : "#f8fafc"
     readonly property color detailElevatedColor: homeDarkMode ? "#3b4350" : "#ffffff"
@@ -526,7 +677,7 @@ Window {
     function ensureListPageForEditor() {
         if (currentPageType === pageGantt) {
             currentPageType = pageToday
-            AbstractContentsModel.loadAllFromDatabase(databasePath, true, false)
+            AbstractContentsModel.loadAllFromDatabase(databasePath, true, false, todaySortField, todaySortDescending)
         }
     }
 
@@ -550,6 +701,8 @@ Window {
         selectedTaskCreatedAt = ""
         selectedTaskDueDate = ""
         selectedTaskPriority = 1
+        editTaskTime = ""
+        editTaskReminderEnabled = false
         selectedTaskCategoryId = 0
         selectedTaskCategoryName = "未分类"
         selectedTaskCategoryColor = "#94a3b8"
@@ -692,7 +845,7 @@ Window {
         clearCategoryFilter()
         resetDetail()
         loadCategories()
-        AbstractContentsModel.loadAllFromDatabase(databasePath, false, false)
+        AbstractContentsModel.loadAllFromDatabase(databasePath, false, false, "priority", true)
     }
 
     function showCompletedTasks() {
@@ -703,7 +856,7 @@ Window {
         clearCategoryFilter()
         resetDetail()
         loadCategories()
-        AbstractContentsModel.loadAllFromDatabase(databasePath, false, true)
+        AbstractContentsModel.loadAllFromDatabase(databasePath, false, true, "createdAt", true)
     }
 
     function showGanttChart() {
@@ -725,7 +878,7 @@ Window {
         clearCategoryFilter()
         resetDetail()
         loadCategories()
-        AbstractContentsModel.loadAllFromDatabase(databasePath, true, false)
+        AbstractContentsModel.loadAllFromDatabase(databasePath, true, false, todaySortField, todaySortDescending)
     }
 
     function showCategoryTasks(categoryId, categoryName) {
@@ -738,7 +891,7 @@ Window {
         activeCategoryId = categoryId
         activeCategoryName = categoryName || ""
         loadCategories()
-        AbstractContentsModel.loadAllFromDatabase(databasePath, false, false)
+        AbstractContentsModel.loadAllFromDatabase(databasePath, false, false, "priority", true)
     }
 
     function showSettings() {
@@ -783,7 +936,7 @@ Window {
         middleCollapsed = false
         clearCategoryFilter()
         loadCategories()
-        AbstractContentsModel.loadAllFromDatabase(databasePath, false, false)
+        AbstractContentsModel.loadAllFromDatabase(databasePath, false, false, "priority", true)
 
         for (let i = 0; i < AbstractContentsModel.rowCount(); ++i) {
             const task = AbstractContentsModel.get(i)
@@ -854,6 +1007,8 @@ Window {
         selectedTaskAuthor = author || "未知作者"
         selectedTaskCreatedAt = createdAt || time
         selectedTaskDueDate = dueDate || ""
+        editTaskTime = time || ""
+        editTaskReminderEnabled = (time || "").trim() !== ""
         selectedTaskPriority = priority > 0 ? priority : 1
         selectedTaskCategoryId = categoryId > 0 ? categoryId : 0
         selectedTaskCategoryName = categoryName && categoryName !== "" ? categoryName : "未分类"
@@ -865,6 +1020,8 @@ Window {
         editTaskContent = selectedTaskContent
         editTaskStartDate = selectedTaskStartDate
         editTaskDueDate = selectedTaskDueDate
+        editTaskTime = selectedTaskTime
+        editTaskReminderEnabled = selectedTaskTime.trim() !== ""
         editTaskPriority = selectedTaskPriority
         editTaskCategoryIndex = selectedDetailCategoryIndex
         editTaskCompleted = selectedTaskCompleted
@@ -904,6 +1061,7 @@ Window {
             "content": contentValue === "" ? outlineValue : contentValue,
             "startDate": editTaskStartDate.trim(),
             "endDate": editTaskDueDate.trim(),
+            "todayUntil": editTaskReminderEnabled ? editTaskTime.trim() : "",
             "priority": editTaskPriority,
             "categoryId": categoryId,
             "completed": editTaskCompleted
@@ -918,6 +1076,7 @@ Window {
         selectedTaskContent = contentValue === "" ? outlineValue : contentValue
         selectedTaskStartDate = editTaskStartDate.trim()
         selectedTaskDueDate = editTaskDueDate.trim()
+        selectedTaskTime = editTaskReminderEnabled ? editTaskTime.trim() : ""
         selectedTaskPriority = editTaskPriority
         selectedTaskCompleted = editTaskCompleted
         selectedTaskCategoryId = categoryId
@@ -972,7 +1131,7 @@ Window {
             GanttModel.loadTasks()
         } else {
             loadCategories()
-            AbstractContentsModel.loadAllFromDatabase(databasePath, currentPageType === pageToday, currentPageType === pageCompleted)
+            AbstractContentsModel.loadAllFromDatabase(databasePath, currentPageType === pageToday, currentPageType === pageCompleted, todaySortField, todaySortDescending)
         }
     }
 
@@ -1041,6 +1200,18 @@ Window {
         }
     }
 
+    Timer {
+        id: detailDateCorrectionTimer
+        interval: 1400
+        repeat: false
+        onTriggered: {
+            mainWindow.clearDetailDateCorrectionFlags()
+            mainWindow.detailDateCorrectionNoticeVisible = false
+            mainWindow.detailDateCorrectionMessage = ""
+            mainWindow.detailDateLastCorrectedField = ""
+        }
+    }
+
     Popup {
         id: detailDatePopup
         width: 360
@@ -1063,7 +1234,7 @@ Window {
             spacing: 14
 
             Label {
-                text: detailDateTimeField === "start" ? "选择开始时间" : "选择结束时间"
+                text: detailDateTimeField === "start" ? "选择开始时间" : (detailDateTimeField === "reminder" ? "选择提醒时间" : "选择结束时间")
                 font.pixelSize: 18
                 font.bold: true
                 color: homeDarkMode ? "#111827" : "#1f2937"
@@ -1076,19 +1247,181 @@ Window {
                 Layout.fillWidth: true
 
                 Label { text: "年"; color: homeDarkMode ? "#475569" : "#64748b" }
-                SpinBox { id: detailDateYear; from: 2020; to: 2100; editable: true; Layout.fillWidth: true }
+                SpinBox {
+                    id: detailDateYear
+                    from: 2020
+                    to: 2100
+                    editable: true
+                    Layout.fillWidth: true
+                    onValueChanged: mainWindow.clampDetailDateDay()
+
+                    SequentialAnimation on x {
+                        running: mainWindow.detailDateYearCorrected
+                        loops: 1
+                        NumberAnimation { to: -2; duration: 34; easing.type: Easing.OutQuad }
+                        NumberAnimation { to: 2; duration: 52; easing.type: Easing.InOutQuad }
+                        NumberAnimation { to: -1; duration: 44; easing.type: Easing.InOutQuad }
+                        NumberAnimation { to: 0; duration: 36; easing.type: Easing.OutQuad }
+                    }
+
+                    background: Rectangle {
+                        radius: 6
+                        color: mainWindow.detailDateYearCorrected ? "#fff7cc" : "#ffffff"
+                        border.color: mainWindow.detailDateYearCorrected ? "#f59e0b" : "#d8dee8"
+                        border.width: 1
+
+                        Behavior on color {
+                            ColorAnimation { duration: 180 }
+                        }
+
+                        Behavior on border.color {
+                            ColorAnimation { duration: 180 }
+                        }
+                    }
+                }
 
                 Label { text: "月"; color: homeDarkMode ? "#475569" : "#64748b" }
-                SpinBox { id: detailDateMonth; from: 1; to: 12; editable: true; Layout.fillWidth: true }
+                SpinBox {
+                    id: detailDateMonth
+                    from: 1
+                    to: 12
+                    editable: true
+                    Layout.fillWidth: true
+                    onValueChanged: mainWindow.clampDetailDateDay()
+
+                    SequentialAnimation on x {
+                        running: mainWindow.detailDateMonthCorrected
+                        loops: 1
+                        NumberAnimation { to: -2; duration: 34; easing.type: Easing.OutQuad }
+                        NumberAnimation { to: 2; duration: 52; easing.type: Easing.InOutQuad }
+                        NumberAnimation { to: -1; duration: 44; easing.type: Easing.InOutQuad }
+                        NumberAnimation { to: 0; duration: 36; easing.type: Easing.OutQuad }
+                    }
+
+                    background: Rectangle {
+                        radius: 6
+                        color: mainWindow.detailDateMonthCorrected ? "#fff7cc" : "#ffffff"
+                        border.color: mainWindow.detailDateMonthCorrected ? "#f59e0b" : "#d8dee8"
+                        border.width: 1
+
+                        Behavior on color {
+                            ColorAnimation { duration: 180 }
+                        }
+
+                        Behavior on border.color {
+                            ColorAnimation { duration: 180 }
+                        }
+                    }
+                }
 
                 Label { text: "日"; color: homeDarkMode ? "#475569" : "#64748b" }
-                SpinBox { id: detailDateDay; from: 1; to: 31; editable: true; Layout.fillWidth: true }
+                SpinBox {
+                    id: detailDateDay
+                    from: 1
+                    to: mainWindow.daysInMonth(detailDateYear.value, detailDateMonth.value)
+                    editable: true
+                    Layout.fillWidth: true
+
+                    SequentialAnimation on x {
+                        running: mainWindow.detailDateDayCorrected
+                        loops: 1
+                        NumberAnimation { to: -2; duration: 34; easing.type: Easing.OutQuad }
+                        NumberAnimation { to: 2; duration: 52; easing.type: Easing.InOutQuad }
+                        NumberAnimation { to: -1; duration: 44; easing.type: Easing.InOutQuad }
+                        NumberAnimation { to: 0; duration: 36; easing.type: Easing.OutQuad }
+                    }
+
+                    background: Rectangle {
+                        radius: 6
+                        color: mainWindow.detailDateDayCorrected ? "#fff7cc" : "#ffffff"
+                        border.color: mainWindow.detailDateDayCorrected ? "#f59e0b" : "#d8dee8"
+                        border.width: 1
+
+                        Behavior on color {
+                            ColorAnimation { duration: 180 }
+                        }
+
+                        Behavior on border.color {
+                            ColorAnimation { duration: 180 }
+                        }
+                    }
+                }
 
                 Label { text: "时"; color: homeDarkMode ? "#475569" : "#64748b" }
-                SpinBox { id: detailDateHour; from: 0; to: 23; editable: true; Layout.fillWidth: true }
+                SpinBox {
+                    id: detailDateHour
+                    from: 0
+                    to: 23
+                    editable: true
+                    Layout.fillWidth: true
+                    onValueChanged: mainWindow.normalizeDetailDateInputs()
+
+                    SequentialAnimation on x {
+                        running: mainWindow.detailDateHourCorrected
+                        loops: 1
+                        NumberAnimation { to: -2; duration: 34; easing.type: Easing.OutQuad }
+                        NumberAnimation { to: 2; duration: 52; easing.type: Easing.InOutQuad }
+                        NumberAnimation { to: -1; duration: 44; easing.type: Easing.InOutQuad }
+                        NumberAnimation { to: 0; duration: 36; easing.type: Easing.OutQuad }
+                    }
+
+                    background: Rectangle {
+                        radius: 6
+                        color: mainWindow.detailDateHourCorrected ? "#fff7cc" : "#ffffff"
+                        border.color: mainWindow.detailDateHourCorrected ? "#f59e0b" : "#d8dee8"
+                        border.width: 1
+
+                        Behavior on color {
+                            ColorAnimation { duration: 180 }
+                        }
+
+                        Behavior on border.color {
+                            ColorAnimation { duration: 180 }
+                        }
+                    }
+                }
 
                 Label { text: "分"; color: homeDarkMode ? "#475569" : "#64748b" }
-                SpinBox { id: detailDateMinute; from: 0; to: 59; editable: true; Layout.fillWidth: true }
+                SpinBox {
+                    id: detailDateMinute
+                    from: 0
+                    to: 59
+                    editable: true
+                    Layout.fillWidth: true
+                    onValueChanged: mainWindow.normalizeDetailDateInputs()
+
+                    SequentialAnimation on x {
+                        running: mainWindow.detailDateMinuteCorrected
+                        loops: 1
+                        NumberAnimation { to: -2; duration: 34; easing.type: Easing.OutQuad }
+                        NumberAnimation { to: 2; duration: 52; easing.type: Easing.InOutQuad }
+                        NumberAnimation { to: -1; duration: 44; easing.type: Easing.InOutQuad }
+                        NumberAnimation { to: 0; duration: 36; easing.type: Easing.OutQuad }
+                    }
+
+                    background: Rectangle {
+                        radius: 6
+                        color: mainWindow.detailDateMinuteCorrected ? "#fff7cc" : "#ffffff"
+                        border.color: mainWindow.detailDateMinuteCorrected ? "#f59e0b" : "#d8dee8"
+                        border.width: 1
+
+                        Behavior on color {
+                            ColorAnimation { duration: 180 }
+                        }
+
+                        Behavior on border.color {
+                            ColorAnimation { duration: 180 }
+                        }
+                    }
+                }
+            }
+
+            Label {
+                visible: mainWindow.detailDateCorrectionNoticeVisible
+                Layout.fillWidth: true
+                text: mainWindow.detailDateCorrectionMessage === "" ? "已自动修正为合法日期时间" : mainWindow.detailDateCorrectionMessage
+                color: "#b45309"
+                font.pixelSize: 12
             }
 
             RowLayout {
@@ -1205,6 +1538,13 @@ Window {
             detailHintTextColor: mainWindow.detailHintTextColor
             searchKeyword: leftSidebar.searchText
             selectedCategoryId: mainWindow.activeCategoryId
+            showSortControl: currentPageType === pageToday
+            sortOptions: mainWindow.todaySortOptions
+            selectedSortIndex: mainWindow.todaySortIndex
+            onSortIndexChanged: function(index) {
+                mainWindow.todaySortIndex = index
+                mainWindow.refreshCurrentView()
+            }
             onItemSelected: (taskId, title, outline, content, time, startDate, author, createdAt, dueDate, priority, categoryId, categoryName, categoryColor, completed) =>
                                 mainWindow.openTaskDetail(taskId, title, outline, content, time, startDate, author, createdAt, dueDate, priority, categoryId, categoryName, categoryColor, completed)
         }
@@ -1345,6 +1685,8 @@ Window {
                                             selectedTaskCategoryName: mainWindow.selectedTaskCategoryName
                                             selectedTaskAuthor: mainWindow.selectedTaskAuthor
                                             selectedTaskCreatedAt: mainWindow.selectedTaskCreatedAt
+                                            editTaskTime: mainWindow.editTaskTime
+                                            editTaskReminderEnabled: mainWindow.editTaskReminderEnabled
                                             editTaskStartDate: mainWindow.editTaskStartDate
                                             editTaskDueDate: mainWindow.editTaskDueDate
                                             editTaskPriority: mainWindow.editTaskPriority
@@ -1370,6 +1712,8 @@ Window {
                                             openDateTimeEditorFunc: mainWindow.openDateTimeEditor
                                             onTitleEdited: function(value) { mainWindow.editTaskTitle = value }
                                             onTitleEditFinished: mainWindow.saveSelectedTaskEdits()
+                                            onReminderEdited: function(value) { mainWindow.editTaskTime = value; mainWindow.saveSelectedTaskEdits() }
+                                            onReminderEnabledEdited: function(value) { mainWindow.editTaskReminderEnabled = value; mainWindow.saveSelectedTaskEdits() }
                                             onStartDateEdited: function(value) { mainWindow.editTaskStartDate = value; mainWindow.saveSelectedTaskEdits() }
                                             onDueDateEdited: function(value) { mainWindow.editTaskDueDate = value; mainWindow.saveSelectedTaskEdits() }
                                             onPriorityEdited: function(value) { mainWindow.editTaskPriority = value; mainWindow.saveSelectedTaskEdits() }
@@ -1418,6 +1762,8 @@ Window {
                                             selectedTaskCategoryName: mainWindow.selectedTaskCategoryName
                                             selectedTaskAuthor: mainWindow.selectedTaskAuthor
                                             selectedTaskCreatedAt: mainWindow.selectedTaskCreatedAt
+                                            editTaskTime: mainWindow.editTaskTime
+                                            editTaskReminderEnabled: mainWindow.editTaskReminderEnabled
                                             editTaskStartDate: mainWindow.editTaskStartDate
                                             editTaskDueDate: mainWindow.editTaskDueDate
                                             editTaskPriority: mainWindow.editTaskPriority
@@ -1443,6 +1789,8 @@ Window {
                                             openDateTimeEditorFunc: mainWindow.openDateTimeEditor
                                             onTitleEdited: function(value) { mainWindow.editTaskTitle = value }
                                             onTitleEditFinished: mainWindow.saveSelectedTaskEdits()
+                                            onReminderEdited: function(value) { mainWindow.editTaskTime = value; mainWindow.saveSelectedTaskEdits() }
+                                            onReminderEnabledEdited: function(value) { mainWindow.editTaskReminderEnabled = value; mainWindow.saveSelectedTaskEdits() }
                                             onStartDateEdited: function(value) { mainWindow.editTaskStartDate = value; mainWindow.saveSelectedTaskEdits() }
                                             onDueDateEdited: function(value) { mainWindow.editTaskDueDate = value; mainWindow.saveSelectedTaskEdits() }
                                             onPriorityEdited: function(value) { mainWindow.editTaskPriority = value; mainWindow.saveSelectedTaskEdits() }
@@ -1605,7 +1953,7 @@ Window {
                                 editingCategoryId = categoryId
                                 editingCategoryName = name
                                 editingCategoryColor = color
-                                AbstractContentsModel.loadAllFromDatabase(databasePath, false, false)
+                                AbstractContentsModel.loadAllFromDatabase(databasePath, false, false, "priority", true)
                                 newCategoryDialog.loadCategory(name, color)
                             }
                         }
@@ -1616,7 +1964,7 @@ Window {
                             editingCategoryName = name
                             editingCategoryColor = color
                             loadCategories()
-                            AbstractContentsModel.loadAllFromDatabase(databasePath, false, false)
+                            AbstractContentsModel.loadAllFromDatabase(databasePath, false, false, "priority", true)
                             newCategoryDialog.loadCategory(name, color)
                         }
                     }
@@ -1632,7 +1980,7 @@ Window {
                                 activeCategoryName = ""
                             }
                             loadCategories()
-                            AbstractContentsModel.loadAllFromDatabase(databasePath, false, false)
+                            AbstractContentsModel.loadAllFromDatabase(databasePath, false, false, "priority", true)
                             newCategoryDialog.resetForm()
                         }
                     }

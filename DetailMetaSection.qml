@@ -14,6 +14,8 @@ ColumnLayout {
     property string selectedTaskCategoryName: ""
     property string selectedTaskAuthor: ""
     property string selectedTaskCreatedAt: ""
+    property string editTaskTime: ""
+    property bool editTaskReminderEnabled: false
     property string editTaskStartDate: ""
     property string editTaskDueDate: ""
     property int editTaskPriority: 1
@@ -39,6 +41,8 @@ ColumnLayout {
     property var openDateTimeEditorFunc
     signal titleEdited(string value)
     signal titleEditFinished()
+    signal reminderEdited(string value)
+    signal reminderEnabledEdited(bool value)
     signal startDateEdited(string value)
     signal dueDateEdited(string value)
     signal priorityEdited(int value)
@@ -145,6 +149,69 @@ ColumnLayout {
                         verticalAlignment: Text.AlignVCenter
                         font.pixelSize: Math.max(12, root.detailFontSize - 7)
                     }
+                }
+            }
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: 52
+            radius: 12
+            color: root.detailElevatedColor
+            border.color: root.detailBorderColor
+            border.width: 1
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 10
+                spacing: 8
+
+                CheckBox {
+                    checked: root.editTaskReminderEnabled
+                    Layout.alignment: Qt.AlignVCenter
+                    onToggled: root.reminderEnabledEdited(checked)
+                }
+
+                Label {
+                    text: root.tFunc("提醒", "Reminder")
+                    color: root.detailHintTextColor
+                    font.pixelSize: Math.max(12, root.detailFontSize - 7)
+                    Layout.preferredWidth: 44
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                TextField {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    text: root.editTaskTime === "" ? root.tFunc("未设置", "Not set") : root.editTaskTime
+                    readOnly: true
+                    enabled: root.editTaskReminderEnabled
+                    color: root.editTaskReminderEnabled ? root.detailTextColor : root.detailHintTextColor
+                    background: Rectangle {
+                        radius: 8
+                        color: root.detailElevatedColor
+                        border.color: root.detailBorderColor
+                        border.width: 1
+                        opacity: root.editTaskReminderEnabled ? 1 : 0.7
+                    }
+                }
+
+                Button {
+                    text: root.tFunc("选择", "Pick")
+                    implicitWidth: 56
+                    implicitHeight: 34
+                    Layout.alignment: Qt.AlignVCenter
+                    enabled: root.editTaskReminderEnabled
+                    onClicked: root.openDateTimeEditorFunc("reminder")
+                }
+
+                Button {
+                    visible: root.editTaskReminderEnabled && root.editTaskTime !== ""
+                    text: root.tFunc("清空", "Clear")
+                    implicitWidth: 56
+                    implicitHeight: 34
+                    Layout.alignment: Qt.AlignVCenter
+                    onClicked: root.reminderEdited("")
                 }
             }
         }

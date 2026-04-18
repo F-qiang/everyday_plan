@@ -17,6 +17,7 @@ Item {
     property string categoryColor: "#94a3b8"
     property bool completed: false
     property bool todaySelected: false
+    property int priority: 1
     property real doneScale: 1
     property real doneCheckOpacity: completed ? 1 : 0
     property real doneFlashOpacity: 0
@@ -33,7 +34,13 @@ Item {
                                             : (mainWindow.homeDarkMode ? "#3a4049" : "#ffffff")
     readonly property color cardBorder: completed
                                         ? (mainWindow.homeDarkMode ? "#64748b" : "#cbd5e1")
-                                        : (mainWindow.homeDarkMode ? "#4b5563" : "#d8dee8")
+                                        : priority >= 4
+                                          ? (mainWindow.homeDarkMode ? "#ef4444" : "#dc2626")
+                                          : priority === 3
+                                            ? (mainWindow.homeDarkMode ? "#f59e0b" : "#d97706")
+                                            : priority === 2
+                                              ? (mainWindow.homeDarkMode ? "#3b82f6" : "#2563eb")
+                                              : (mainWindow.homeDarkMode ? "#4b5563" : "#d8dee8")
     readonly property color titleColor: completed
                                         ? (mainWindow.homeDarkMode ? "#94a3b8" : "#64748b")
                                         : (mainWindow.homeDarkMode ? "#f3f4f6" : "#0f172a")
@@ -178,7 +185,7 @@ Item {
         color: cardBackground
         radius: 10
         border.color: cardBorder
-        border.width: 1
+        border.width: completed ? 1 : 2
         opacity: doneCardOpacity
         scale: doneScale
         transformOrigin: Item.Center

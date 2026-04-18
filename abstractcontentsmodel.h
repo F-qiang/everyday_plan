@@ -36,7 +36,7 @@ public:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     QHash<int, QByteArray> roleNames() const override;
 
-    Q_INVOKABLE bool loadAllFromDatabase(const QString &dbPath, bool todayOnly = false, bool completedOnly = false);
+    Q_INVOKABLE bool loadAllFromDatabase(const QString &dbPath, bool todayOnly = false, bool completedOnly = false, const QString &sortField = "priority", bool sortDescending = true);
     Q_INVOKABLE QVariantMap get(int row) const;
     Q_INVOKABLE void updateOutline(int row, const QString &newOutline, const QString &dbPath);
 

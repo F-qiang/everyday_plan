@@ -92,7 +92,7 @@ QVariantMap AbstractContentsModel::get(int row) const
     return task;
 }
 
-bool AbstractContentsModel::loadAllFromDatabase(const QString &dbPath, bool todayOnly, bool completedOnly)
+bool AbstractContentsModel::loadAllFromDatabase(const QString &dbPath, bool todayOnly, bool completedOnly, const QString &sortField, bool sortDescending)
 {
     beginResetModel();
     qDeleteAll(m_contentList);
@@ -146,7 +146,16 @@ bool AbstractContentsModel::loadAllFromDatabase(const QString &dbPath, bool toda
         sql += todayOnly ? " AND Tasks.status = 1" : " WHERE Tasks.status = 1";
     }
 
-    sql += " ORDER BY Tasks.created_at DESC, Tasks.task_id DESC";
+    QString orderColumn = "Tasks.priority";
+    if (sortField == "createdAt") {
+        orderColumn = "Tasks.created_at";
+    } else if (sortField == "dueDate") {
+        orderColumn = "COALESCE(NULLIF(Tasks.end_date, ''), '9999-12-31 23:59:59')";
+    } else if (sortField == "startDate") {
+        orderColumn = "COALESCE(NULLIF(Tasks.start_date, ''), '9999-12-31 23:59:59')";
+    }
+    const QString direction = sortDescending ? "DESC" : "ASC";
+    sql += " ORDER BY " + orderColumn + " " + direction + ", Tasks.priority DESC, Tasks.created_at DESC, Tasks.task_id DESC";
 
     if (!query.exec(sql)) {
         qDebug() << "[AbstractContentsModel] 遍历 Tasks 数据失败：" << query.lastError().text();
