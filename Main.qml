@@ -1,4 +1,4 @@
-﻿// 主窗口 - 整合登录和甘特图功能
+// 主窗口 - 整合登录和甘特图功能
 import QtQuick
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 2.15
@@ -8,15 +8,37 @@ import AuthManager 1.0
 import GanttModel 1.0
 import AbstractContentsModel 1.0
 import DatabaseManager 1.0
+import NotificationManager 1.0
 
 Window {
     id: mainWindow
+    onClosing: function(close) {
+        if (!trayExitRequested && NotificationManager.available) {
+            close.accepted = false
+            hideToTray()
+            return
+        }
+        close.accepted = true
+    }
     visible: true
     color: "#000000"
      property int self_height: Screen.height
     property int self_width: Screen.width
     property string databasePath: "./data.db"
     property bool sidebarBackupJustCompleted: false
+    property bool trayExitRequested: false
+
+    function restoreFromTray() {
+        visible = true
+        showNormal()
+        raise()
+        requestActivate()
+    }
+
+    function hideToTray() {
+        visible = false
+        NotificationManager.showTrayHint()
+    }
 
     function formatDisplayDateTime(value) {
         const source = (value || "").trim()
@@ -387,6 +409,81 @@ Window {
         }
     }
 
+    function currentDateTimeString(dateValue) {
+        const now = dateValue instanceof Date ? dateValue : new Date()
+        return now.getFullYear().toString().padStart(4, "0") + "-"
+             + (now.getMonth() + 1).toString().padStart(2, "0") + "-"
+             + now.getDate().toString().padStart(2, "0") + " "
+             + now.getHours().toString().padStart(2, "0") + ":"
+             + now.getMinutes().toString().padStart(2, "0") + ":"
+             + now.getSeconds().toString().padStart(2, "0")
+    }
+
+    function previousReminderWindowString() {
+        const base = new Date()
+        base.setMilliseconds(base.getMilliseconds() - reminderPollIntervalMs - 1000)
+        return currentDateTimeString(base)
+    }
+
+    function reminderDateFromString(value) {
+        const source = (value || "").trim()
+        if (source === "") {
+            return null
+        }
+        let date = new Date(source.replace(" ", "T"))
+        if (isNaN(date.getTime())) {
+            date = new Date(source)
+        }
+        return isNaN(date.getTime()) ? null : date
+    }
+
+    function syncReminderPollInterval() {
+        if (!AuthManager.isLoggedIn || AuthManager.currentUserId <= 0) {
+            reminderPollIntervalMs = reminderIdleIntervalMs
+            reminderPollTimer.interval = reminderPollIntervalMs
+            return
+        }
+
+        const nextReminderTime = DatabaseManager.getNextReminderTime(AuthManager.currentUserId)
+        const nextReminderDate = reminderDateFromString(nextReminderTime)
+        let nextInterval = reminderIdleIntervalMs
+
+        if (nextReminderDate !== null) {
+            const diffMs = nextReminderDate.getTime() - Date.now()
+            if (diffMs <= 60000) {
+                nextInterval = reminderUrgentIntervalMs
+            } else if (diffMs <= 10 * 60 * 1000) {
+                nextInterval = reminderNearIntervalMs
+            }
+        }
+
+        if (reminderPollIntervalMs !== nextInterval) {
+            reminderPollIntervalMs = nextInterval
+        }
+        reminderPollTimer.interval = reminderPollIntervalMs
+    }
+
+    function checkDueReminders() {
+        if (!AuthManager.isLoggedIn || AuthManager.currentUserId <= 0) {
+            lastReminderCheckAt = currentDateTimeString()
+            return
+        }
+
+        const nowString = currentDateTimeString()
+        const fromString = lastReminderCheckAt === "" ? previousReminderWindowString() : lastReminderCheckAt
+        const dueTasks = DatabaseManager.getDueReminderTasks(AuthManager.currentUserId, fromString, nowString)
+        for (let i = 0; i < dueTasks.length; ++i) {
+            const task = dueTasks[i]
+            const reminderKey = task.taskId + "@" + task.reminderTime
+            if (!notifiedReminderKeys[reminderKey]) {
+                NotificationManager.showReminderNotification(task.title || "", task.outline || "", task.reminderTime || "")
+                notifiedReminderKeys[reminderKey] = true
+            }
+        }
+        lastReminderCheckAt = nowString
+        syncReminderPollInterval()
+    }
+
     function t(zh, en) {
         return uiLanguage === "en" ? en : zh
     }
@@ -396,12 +493,19 @@ Window {
     readonly property int pageCompleted: 2
     readonly property int pageGantt: 3
 
+    readonly property int rightPanelNone: 0
+    readonly property int rightPanelDetail: 1
+    readonly property int rightPanelNewTask: 2
+    readonly property int rightPanelNewCategory: 3
+    readonly property int rightPanelSettings: 4
+
     property int currentPageType: pageToday
-    property bool settingsVisible: false
+    property int rightPanelMode: rightPanelNone
+    readonly property bool settingsVisible: rightPanelMode === rightPanelSettings
     property bool middleCollapsed: false
-    property bool detailVisible: false
-    property bool newTaskVisible: false
-    property bool newCategoryVisible: false
+    readonly property bool detailVisible: rightPanelMode === rightPanelDetail
+    readonly property bool newTaskVisible: rightPanelMode === rightPanelNewTask
+    readonly property bool newCategoryVisible: rightPanelMode === rightPanelNewCategory
     property var categoryList: []
     property int activeCategoryId: -1
     property string activeCategoryName: ""
@@ -435,6 +539,12 @@ Window {
     property bool detailDateCorrectionNoticeVisible: false
     property string detailDateCorrectionMessage: ""
     property string detailDateLastCorrectedField: ""
+    property string lastReminderCheckAt: ""
+    property int reminderPollIntervalMs: 10000
+    property int reminderUrgentIntervalMs: 1000
+    property int reminderNearIntervalMs: 3000
+    property int reminderIdleIntervalMs: 10000
+    property var notifiedReminderKeys: ({})
     property string editTaskTitle: ""
     property string editTaskOutline: ""
     property string editTaskContent: ""
@@ -657,6 +767,10 @@ Window {
         }
     }
 
+    function setRightPanelMode(mode) {
+        rightPanelMode = mode
+    }
+
     function pageTitleText() {
         if (settingsVisible) return t("设置", "Settings")
         if (newTaskVisible) return t("新建任务", "New Task")
@@ -687,9 +801,7 @@ Window {
     }
 
     function resetDetail() {
-        detailVisible = false
-        newTaskVisible = false
-        newCategoryVisible = false
+        setRightPanelMode(rightPanelNone)
         selectedTaskId = -1
         selectedTaskTitle = ""
         selectedTaskOutline = ""
@@ -840,7 +952,6 @@ Window {
     function showAllTasks() {
         console.log("打开全部任务")
         currentPageType = pageAllTasks
-        settingsVisible = false
         middleCollapsed = false
         clearCategoryFilter()
         resetDetail()
@@ -851,7 +962,6 @@ Window {
     function showCompletedTasks() {
         console.log("打开已完成任务")
         currentPageType = pageCompleted
-        settingsVisible = false
         middleCollapsed = false
         clearCategoryFilter()
         resetDetail()
@@ -862,7 +972,6 @@ Window {
     function showGanttChart() {
         console.log("打开甘特图")
         currentPageType = pageGantt
-        settingsVisible = false
         middleCollapsed = true
         clearCategoryFilter()
         resetDetail()
@@ -873,7 +982,6 @@ Window {
     function showTodayTasks() {
         console.log("打开今日任务")
         currentPageType = pageToday
-        settingsVisible = false
         middleCollapsed = false
         clearCategoryFilter()
         resetDetail()
@@ -883,13 +991,10 @@ Window {
 
     function showCategoryTasks(categoryId, categoryName) {
         currentPageType = pageAllTasks
-        settingsVisible = false
-        newTaskVisible = false
-        newCategoryVisible = false
-        detailVisible = false
         middleCollapsed = false
         activeCategoryId = categoryId
         activeCategoryName = categoryName || ""
+        resetDetail()
         loadCategories()
         AbstractContentsModel.loadAllFromDatabase(databasePath, false, false, "priority", true)
     }
@@ -899,9 +1004,9 @@ Window {
             openLoginWindow()
             return
         }
-        settingsVisible = true
-        middleCollapsed = true
         resetDetail()
+        setRightPanelMode(rightPanelSettings)
+        middleCollapsed = true
     }
 
     function showNewTaskForm() {
@@ -929,10 +1034,7 @@ Window {
         }
 
         currentPageType = pageAllTasks
-        settingsVisible = false
-        detailVisible = false
-        newCategoryVisible = false
-        newTaskVisible = false
+        setRightPanelMode(rightPanelNone)
         middleCollapsed = false
         clearCategoryFilter()
         loadCategories()
@@ -963,11 +1065,8 @@ Window {
     }
 
     function showNewCategoryForm() {
-        settingsVisible = false
-        detailVisible = false
-        newTaskVisible = false
         ensureListPageForEditor()
-        newCategoryVisible = true
+        setRightPanelMode(rightPanelNewCategory)
         middleCollapsed = false
         editingCategoryId = -1
         editingCategoryName = ""
@@ -980,10 +1079,8 @@ Window {
         for (let i = 0; i < categoryList.length; ++i) {
             const category = categoryList[i]
             if (category.categoryId === categoryId) {
-                detailVisible = false
-                newTaskVisible = false
                 ensureListPageForEditor()
-                newCategoryVisible = true
+                setRightPanelMode(rightPanelNewCategory)
                 middleCollapsed = false
                 editingCategoryId = category.categoryId
                 editingCategoryName = category.name || ""
@@ -995,9 +1092,7 @@ Window {
     }
 
     function openTaskDetail(taskId, title, outline, content, time, startDate, author, createdAt, dueDate, priority, categoryId, categoryName, categoryColor, completed) {
-        settingsVisible = false
-        newTaskVisible = false
-        newCategoryVisible = false
+        setRightPanelMode(rightPanelDetail)
         selectedTaskId = taskId
         selectedTaskTitle = title
         selectedTaskOutline = outline
@@ -1025,7 +1120,6 @@ Window {
         editTaskPriority = selectedTaskPriority
         editTaskCategoryIndex = selectedDetailCategoryIndex
         editTaskCompleted = selectedTaskCompleted
-        detailVisible = true
         middleCollapsed = false
     }
 
@@ -1061,7 +1155,7 @@ Window {
             "content": contentValue === "" ? outlineValue : contentValue,
             "startDate": editTaskStartDate.trim(),
             "endDate": editTaskDueDate.trim(),
-            "todayUntil": editTaskReminderEnabled ? editTaskTime.trim() : "",
+            "reminderAt": editTaskReminderEnabled ? editTaskTime.trim() : "",
             "priority": editTaskPriority,
             "categoryId": categoryId,
             "completed": editTaskCompleted
@@ -1148,6 +1242,9 @@ Window {
             loadUserSettings()
             loadCategories()
             showTodayTasks()
+            lastReminderCheckAt = previousReminderWindowString()
+            syncReminderPollInterval()
+            reminderPollTimer.start()
         }
     }
 
@@ -1182,6 +1279,19 @@ Window {
 
     // 监听登录状态变化
     Connections {
+        target: NotificationManager
+
+        function onRestoreRequested() {
+            mainWindow.restoreFromTray()
+        }
+
+        function onExitRequested() {
+            mainWindow.trayExitRequested = true
+            Qt.quit()
+        }
+    }
+
+    Connections {
         target: AuthManager
         
         function onLoginStateChanged() {
@@ -1190,14 +1300,32 @@ Window {
                 loadUserSettings()
                 loadCategories()
                 refreshCurrentView()
+                lastReminderCheckAt = previousReminderWindowString()
+                notifiedReminderKeys = ({})
+                syncReminderPollInterval()
+                reminderPollTimer.restart()
             } else {
                 GanttModel.userId = -1
                 loadUserSettings()
                 categoryList = []
                 clearCategoryFilter()
                 showTodayTasks()
+                lastReminderCheckAt = ""
+                notifiedReminderKeys = ({})
+                reminderPollIntervalMs = reminderIdleIntervalMs
+                reminderPollTimer.interval = reminderPollIntervalMs
+                reminderPollTimer.stop()
             }
         }
+    }
+
+    Timer {
+        id: reminderPollTimer
+        interval: reminderPollIntervalMs
+        repeat: true
+        running: AuthManager.isLoggedIn
+        triggeredOnStart: true
+        onTriggered: mainWindow.checkDueReminders()
     }
 
     Timer {
@@ -1500,8 +1628,8 @@ Window {
         color: pageBaseColor
 
         readonly property bool ganttMode: currentPageType === pageGantt
-        readonly property bool showWidePanel: ganttMode || settingsVisible
-        readonly property bool splitMode: !showWidePanel && (detailVisible || newTaskVisible || newCategoryVisible)
+        readonly property bool showWidePanel: ganttMode || rightPanelMode === rightPanelSettings
+        readonly property bool splitMode: !showWidePanel && rightPanelMode !== rightPanelNone
         property real detailBackPeekOffset: 0
         property real compactBackButtonScale: 1
         property real compactBackArrowOffset: 0
@@ -1520,9 +1648,9 @@ Window {
                                                                  detailSummaryRowEstimate,
                                                                  detailContentWidthEstimate) + Math.max(88, detailFontSize * 6)
         readonly property real emptyStateMinimumWidth: 340
-        readonly property real activeRightMinimumWidth: (detailVisible || newTaskVisible || newCategoryVisible) ? detailMinimumWidth : emptyStateMinimumWidth
+        readonly property real activeRightMinimumWidth: rightPanelMode !== rightPanelNone ? detailMinimumWidth : emptyStateMinimumWidth
         readonly property bool compactDetailMode: false
-        readonly property real targetMiddleWidth: showWidePanel ? 0 : ((detailVisible || newTaskVisible || newCategoryVisible)
+        readonly property real targetMiddleWidth: showWidePanel ? 0 : (rightPanelMode !== rightPanelNone
                                                                        ? Math.min(Math.max(splitListMinimumWidth, Math.min(360, width * 0.31)), Math.max(splitListMinimumWidth, width - activeRightMinimumWidth))
                                                                        : Math.min(Math.max(splitListMinimumWidth, Math.min(340, width * 0.34)), Math.max(splitListMinimumWidth, width - activeRightMinimumWidth)))
 
@@ -1560,7 +1688,7 @@ Window {
 
             StackLayout {
                 anchors.fill: parent
-                currentIndex: settingsVisible ? 1 : (newCategoryVisible ? 3 : (newTaskVisible ? 2 : (contentArea.ganttMode ? 4 : 0)))
+                currentIndex: contentArea.ganttMode ? 4 : (rightPanelMode === rightPanelSettings ? 1 : (rightPanelMode === rightPanelNewTask ? 2 : (rightPanelMode === rightPanelNewCategory ? 3 : 0)))
                 Rectangle {
                     color: pageBaseColor
 
@@ -1876,6 +2004,7 @@ Window {
                     onChooseBackupDirectoryRequested: backupFolderDialog.open()
                     onBackupNowRequested: mainWindow.runBackupExport()
                     onRestoreBackupRequested: restoreBackupDialog.open()
+                    onTestNotificationRequested: NotificationManager.showNotification("Everyday Plan", "这是一条测试通知，用来确认系统通知已接通。")
                     onDisplayNameEdited: function(value) {
                         if (AuthManager.isLoggedIn) {
                             AuthManager.updateCurrentUserNickname(value)

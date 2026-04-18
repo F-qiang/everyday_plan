@@ -25,6 +25,7 @@ Item {
     signal chooseBackupDirectoryRequested()
     signal backupNowRequested()
     signal restoreBackupRequested()
+    signal testNotificationRequested()
     signal displayNameEdited(string value)
 
     readonly property color pageBackground: homeDarkMode ? "#2f343c" : "#ffffff"
@@ -559,6 +560,44 @@ Item {
                                 implicitHeight: 40
                                 onClicked: root.backupNowRequested()
                             }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: notificationLayout.implicitHeight + 32
+                    radius: 18
+                    color: root.panelBackground
+                    border.color: root.panelBorder
+                    border.width: 1
+
+                    ColumnLayout {
+                        id: notificationLayout
+                        anchors.fill: parent
+                        anchors.margins: 18
+                        spacing: 12
+
+                        Label {
+                            text: root.t("系统通知", "System Notifications")
+                            color: root.titleColor
+                            font.pixelSize: 18
+                            font.bold: true
+                        }
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: root.t("测试 Windows 系统通知是否能正常弹出。后续任务提醒也会使用这一套通知通道。", "Test whether Windows system notifications can appear correctly. Task reminders will use the same notification channel.")
+                            color: root.subTitleColor
+                            font.pixelSize: 12
+                            wrapMode: Text.WordWrap
+                        }
+
+                        Button {
+                            text: root.t("测试通知", "Test Notification")
+                            Layout.fillWidth: true
+                            implicitHeight: 40
+                            onClicked: root.testNotificationRequested()
                         }
                     }
                 }

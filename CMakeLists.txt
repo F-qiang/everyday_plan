@@ -5,7 +5,7 @@ project(everyday_day VERSION 0.2 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 查找 Qt6 必需模块
-find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Sql Network)
+find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Sql Network Widgets)
 
 # Qt6 自动 MOC/RCC/UIC
 qt_standard_project_setup(REQUIRES 6.5)
@@ -13,6 +13,7 @@ qt_standard_project_setup(REQUIRES 6.5)
 # 生成可执行文件
 qt_add_executable(appeveryday_day
     main.cpp
+    windows.rc
 )
 
 # 配置 QML 模块
@@ -41,6 +42,10 @@ qt_add_qml_module(appeveryday_day
         DetailMetaSection.qml
         DetailEditingSection.qml
 
+    RESOURCES
+        assets/ep_app_icon.svg
+        assets/ep_app_icon.ico
+
     SOURCES
         abstractContentsItem.cpp
         abstractContentsItem.h
@@ -56,6 +61,8 @@ qt_add_qml_module(appeveryday_day
         oneDriveManager.h
         oneDriveAppConfig.cpp
         oneDriveAppConfig.h
+        notificationmanager.cpp
+        notificationmanager.h
 
 
 )
@@ -66,6 +73,7 @@ set_target_properties(appeveryday_day PROPERTIES
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     MACOSX_BUNDLE TRUE
     WIN32_EXECUTABLE TRUE
+    QT_TARGET_RC_ICONS "${CMAKE_CURRENT_SOURCE_DIR}/assets/ep_app_icon.ico"
 )
 
 # 链接 Qt6 模块
@@ -74,6 +82,7 @@ target_link_libraries(appeveryday_day
     PRIVATE Qt6::QuickControls2
     PRIVATE Qt6::Sql
     PRIVATE Qt6::Network
+    PRIVATE Qt6::Widgets
 )
 
 include(GNUInstallDirs)

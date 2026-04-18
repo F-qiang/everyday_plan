@@ -1,4 +1,4 @@
-﻿import QtQuick 2.15
+import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 
@@ -184,7 +184,7 @@ Rectangle {
         width: leftSidebar.sidebarContentWidth
         height: leftSidebar.hight_searchinput + 4
         placeholderText: mainWindowRef.t("搜索任务标题或概要", "Search titles or summaries")
-        anchors.top: accountTangle.bottom
+        anchors.top: accountRow.bottom
         anchors.topMargin: leftSidebar.topBargin
         font.pixelSize: 15
         leftPadding: 10

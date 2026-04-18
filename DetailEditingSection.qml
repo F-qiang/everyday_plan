@@ -369,12 +369,15 @@ ColumnLayout {
             }
         }
 
-        contentItem: Column {
+        contentItem: Item {
             id: attachmentMenuContent
+            implicitWidth: attachmentMenuColumn.implicitWidth
+            implicitHeight: attachmentMenuColumn.implicitHeight
             opacity: 1
 
             Column {
                 id: attachmentMenuColumn
+                anchors.fill: parent
                 spacing: 0
                 padding: 6
 
@@ -620,6 +623,7 @@ ColumnLayout {
                 model: root.checklistItemsFromContent(root.editTaskContent)
                 delegate: Rectangle {
                     property var itemData: modelData
+                    property var panelRoot: root
                     Layout.fillWidth: true
                     implicitHeight: 38
                     color: "transparent"
@@ -651,11 +655,11 @@ ColumnLayout {
                                 leftPadding: 0; rightPadding: 0; topPadding: 0; bottomPadding: 0
                                 selectByMouse: true
                                 Component.onCompleted: {
-                                    if (index === root.pendingFocusIndex) {
+                                    if (index === panelRoot.pendingFocusIndex) {
                                         Qt.callLater(function() {
                                             checklistInput.forceActiveFocus()
                                             checklistInput.cursorPosition = checklistInput.text.length
-                                            root.pendingFocusIndex = -1
+                                            panelRoot.pendingFocusIndex = -1
                                         })
                                     }
                                 }

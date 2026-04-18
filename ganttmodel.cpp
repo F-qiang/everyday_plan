@@ -80,7 +80,7 @@ QVariant GanttModel::data(const QModelIndex &index, int role) const
     case EndDateRole:
         return item->endDate().isValid() ? item->endDate().toString("yyyy-MM-dd") : QString();
     case ProgressRole:
-        return item->progress();
+        return calculateTimeProgress(item->startDate(), item->endDate());
     case PriorityRole:
         return item->priority();
     case StatusRole:
@@ -286,7 +286,7 @@ bool GanttModel::updateTaskDates(int taskId, const QDate &startDate, const QDate
                 item->setEndDate(endDate);
 
                 QModelIndex idx = index(m_tasks.indexOf(item));
-                emit dataChanged(idx, idx, {StartDateRole, EndDateRole, StartOffsetRole, DurationRole, BarWidthRole});
+                emit dataChanged(idx, idx, {StartDateRole, EndDateRole, ProgressRole, StartOffsetRole, DurationRole, BarWidthRole});
                 break;
             }
         }
@@ -346,4 +346,25 @@ int GanttModel::calculateDuration(const QDate &start, const QDate &end) const
 
     int duration = effectiveStart.daysTo(effectiveEnd) + 1;
     return qMax(1, duration);
+}
+
+int GanttModel::calculateTimeProgress(const QDate &start, const QDate &end) const
+{
+    if (!start.isValid()) {
+        return 0;
+    }
+
+    const QDate effectiveEnd = end.isValid() ? end : start;
+    const QDate today = QDate::currentDate();
+
+    if (today < start) {
+        return 0;
+    }
+    if (today >= effectiveEnd) {
+        return 100;
+    }
+
+    const int totalSpanDays = qMax(1, start.daysTo(effectiveEnd));
+    const int elapsedDays = qMax(0, start.daysTo(today));
+    return qBound(0, qRound((elapsedDays * 100.0) / totalSpanDays), 100);
 }

@@ -30,7 +30,7 @@ QVariant AbstractContentsModel::data(const QModelIndex &index, int role) const
     case TitleRole: return item->title();
     case AuthorRole: return item->author();
     case ContentRole: return item->content();
-    case TimeRole: return item->time().toString("MM-dd");
+    case TimeRole: return item->time().isValid() ? item->time().toString("yyyy-MM-dd HH:mm") : QString();
     case OutlineRole: return item->outline();
     case CreatedAtRole: return item->createdAt();
     case StartDateRole: return item->startDate();
@@ -78,7 +78,7 @@ QVariantMap AbstractContentsModel::get(int row) const
     task.insert("title", item->title());
     task.insert("author", item->author());
     task.insert("content", item->content());
-    task.insert("time", item->time().toString("MM-dd"));
+    task.insert("time", item->time().isValid() ? item->time().toString("yyyy-MM-dd HH:mm") : QString());
     task.insert("outline", item->outline());
     task.insert("created_at", item->createdAt());
     task.insert("startDate", item->startDate());
@@ -119,6 +119,7 @@ bool AbstractContentsModel::loadAllFromDatabase(const QString &dbPath, bool toda
                Tasks.description,
                COALESCE(NULLIF(Tasks.content, ''), Tasks.description, '') AS content,
                Tasks.created_at,
+               Tasks.reminder_at,
                Tasks.start_date,
                Tasks.end_date,
                Tasks.priority,
@@ -180,11 +181,16 @@ bool AbstractContentsModel::loadAllFromDatabase(const QString &dbPath, bool toda
         item->setStartDate(query.value("start_date").toString());
         item->setDueDate(query.value("end_date").toString());
 
+        const QString reminderText = query.value("reminder_at").toString();
+        QDateTime reminderTime = QDateTime::fromString(reminderText, Qt::ISODate);
+        if (!reminderTime.isValid()) reminderTime = QDateTime::fromString(reminderText, "yyyy-MM-dd HH:mm:ss");
+        if (!reminderTime.isValid()) reminderTime = QDateTime::fromString(reminderText, "yyyy-MM-dd HH:mm");
+        item->setTime(reminderTime);
+
         const QString createdAtText = query.value("created_at").toString();
         QDateTime time = QDateTime::fromString(createdAtText, Qt::ISODate);
         if (!time.isValid()) time = QDateTime::fromString(createdAtText, "yyyy-MM-dd HH:mm:ss");
         if (time.isValid()) {
-            item->setTime(time);
             item->setCreatedAt(time.toString("yyyy-MM-dd HH:mm"));
         } else {
             item->setCreatedAt(createdAtText);

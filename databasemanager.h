@@ -47,6 +47,8 @@ public:
     Q_INVOKABLE bool deleteTask(int taskId);
     Q_INVOKABLE QVariantList getTasksByUser(int userId, const QString &startDate = QString(), const QString &endDate = QString());
     Q_INVOKABLE QVariantList getTasksByDateRange(int userId, const QString &startDate, const QString &endDate);
+    Q_INVOKABLE QVariantList getDueReminderTasks(int userId, const QString &fromDateTime, const QString &toDateTime);
+    Q_INVOKABLE QString getNextReminderTime(int userId);
 
     Q_INVOKABLE int createCategory(int userId, const QString &name, const QString &color, const QString &icon = QString());
     Q_INVOKABLE QVariantList getCategoriesByUser(int userId);
@@ -67,6 +69,7 @@ private:
     bool migrateFromOldVersion();
     bool taskColumnExists(const QString &columnName) const;
     bool userSettingsTableExists() const;
+    void ensureDefaultGuideTaskForUser(int userId);
 
     QSqlDatabase m_db;
     QString m_dbPath;

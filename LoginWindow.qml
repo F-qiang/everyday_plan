@@ -2,6 +2,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import QtQuick.Dialogs
 import QtQuick.Effects
 
 import AuthManager 1.0
@@ -13,6 +14,7 @@ Window {
     height: 500
     title: qsTr("Everyday Plan - 登录")
     color: "#f5f5f5"
+    flags: Qt.Window
     
     // 登录成功信号
     signal loginSuccessful()
@@ -62,20 +64,15 @@ Window {
                 spacing: 10
                 
                 // Logo 图标
-                Rectangle {
+                Image {
                     width: 80
                     height: 80
-                    radius: 16
-                    color: "#3498db"
+                    source: "qrc:/qt/qml/everyday_day/assets/ep_app_icon.svg"
+                    fillMode: Image.PreserveAspectFit
+                    smooth: true
+                    sourceSize.width: 160
+                    sourceSize.height: 160
                     Layout.alignment: Qt.AlignHCenter
-                    
-                    Text {
-                        anchors.centerIn: parent
-                        text: "EP"
-                        font.pixelSize: 32
-                        font.bold: true
-                        color: "#ffffff"
-                    }
                 }
                 
                 Text {

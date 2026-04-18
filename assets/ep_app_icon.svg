@@ -1,0 +1,17 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="epBg" x1="32" y1="24" x2="224" y2="232" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5DB7FF"/>
+      <stop offset="1" stop-color="#2D7DDA"/>
+    </linearGradient>
+    <linearGradient id="epGloss" x1="60" y1="40" x2="180" y2="168" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="20" y="20" width="216" height="216" rx="44" fill="url(#epBg)"/>
+  <rect x="20" y="20" width="216" height="216" rx="44" stroke="#1F5FAD" stroke-opacity="0.22" stroke-width="2"/>
+  <path d="M54 36C95 26 153 28 202 52C157 56 114 76 79 109C57 87 48 62 54 36Z" fill="url(#epGloss)"/>
+  <path d="M82 78H138C166 78 184 93 184 117C184 141 166 156 138 156H109V188H82V78ZM109 100V134H136C148 134 156 128 156 117C156 106 148 100 136 100H109Z" fill="white"/>
+  <path d="M131 78H178V99H157V188H131V78Z" fill="white" opacity="0.92"/>
+</svg>

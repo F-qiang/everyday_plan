@@ -70,6 +70,7 @@ private:
     QString getPriorityColor(int priority) const;
     int calculateStartOffset(const QDate &taskStart) const;
     int calculateDuration(const QDate &start, const QDate &end) const;
+    int calculateTimeProgress(const QDate &start, const QDate &end) const;
 
     QList<GanttTaskItem*> m_tasks;
     QDate m_viewStartDate;

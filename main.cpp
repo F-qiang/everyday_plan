@@ -1,19 +1,23 @@
 #include <QQmlContext>
 #include <QQmlEngine>
-#include <QGuiApplication>
+#include <QApplication>
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
+#include <QIcon>
 
 #include "abstractcontentsmodel.h"
 #include "databasemanager.h"
 #include "authmanager.h"
 #include "ganttmodel.h"
 #include "oneDriveManager.h"
+#include "notificationmanager.h"
 
 int main(int argc, char *argv[])
 {
     QQuickStyle::setStyle("Basic");
-    QGuiApplication app(argc, argv);
+    QApplication app(argc, argv);
+    const QIcon appIcon(QStringLiteral(":/qt/qml/everyday_day/assets/ep_app_icon.ico"));
+    app.setWindowIcon(appIcon);
 
     // 初始化数据库
     DatabaseManager::instance()->initialize("./data.db");
@@ -45,6 +49,9 @@ int main(int argc, char *argv[])
 
     qmlRegisterSingletonInstance<OneDriveManager>("OneDriveManager", 1, 0, "OneDriveManager",
                                                    OneDriveManager::instance());
+
+    qmlRegisterSingletonInstance<NotificationManager>("NotificationManager", 1, 0, "NotificationManager",
+                                                      new NotificationManager(&app));
     
     // 新增：甘特图模型
     qmlRegisterType<GanttModel>("GanttModel", 1, 0, "GanttModelType");
