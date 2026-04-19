@@ -13,7 +13,7 @@ Item {
     property int rowHeight: 58
     property int headerHeight: 60
     property int toolbarHeight: 52
-    property int taskListWidth: 0
+    property int taskListWidth: 220
     property color backgroundColor: "#ffffff"
     property color gridColor: blueGridLinesEnabled ? "#cfe4f8" : "#e0e0e0"
     property color todayColor: blueTodayColumnEnabled ? "#e0f2fe" : "#fff3cd"
@@ -30,6 +30,32 @@ Item {
     readonly property color toolbarButtonActiveBg: "#38bdf8"
     readonly property color toolbarButtonActiveText: "#ffffff"
     readonly property color ganttBarThemeColor: "#38bdf8"
+
+    function priorityColor(priority) {
+        switch (priority) {
+        case 4:
+            return "#dc2626"
+        case 3:
+            return "#ea580c"
+        case 2:
+            return "#d97706"
+        default:
+            return "#64748b"
+        }
+    }
+
+    function priorityLabel(priority) {
+        switch (priority) {
+        case 4:
+            return "P4"
+        case 3:
+            return "P3"
+        case 2:
+            return "P2"
+        default:
+            return "P1"
+        }
+    }
 
     signal taskClicked(int taskId)
     signal taskDatesChanged(int taskId, string startDate, string endDate)
@@ -62,6 +88,120 @@ Item {
     RowLayout {
         anchors.fill: parent
         spacing: 0
+
+        Rectangle {
+            id: taskListPanel
+            Layout.preferredWidth: ganttChart.taskListWidth
+            Layout.fillHeight: true
+            color: "#f8fbff"
+            border.color: "#dbe4f0"
+            border.width: 1
+
+            Column {
+                anchors.fill: parent
+
+                Rectangle {
+                    width: parent.width
+                    height: toolbarHeight
+                    color: toolbarBg
+                    border.width: 0
+                }
+
+                Rectangle {
+                    width: parent.width
+                    height: headerHeight
+                    color: "#eef6ff"
+                    border.color: "#dbe4f0"
+                    border.width: 1
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.leftMargin: 16
+                        text: "任务"
+                        font.pixelSize: 15
+                        font.bold: true
+                        color: "#0f172a"
+                    }
+                }
+
+                ListView {
+                    id: taskTitleListView
+                    width: parent.width
+                    height: parent.height - toolbarHeight - headerHeight
+                    model: GanttModel
+                    interactive: false
+                    clip: true
+
+                    delegate: Rectangle {
+                        width: taskTitleListView.width
+                        height: rowHeight
+                        color: index % 2 === 0 ? "#f8fbff" : "#fdfefe"
+                        border.color: "#e2e8f0"
+                        border.width: 1
+
+                        Row {
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 10
+                            spacing: 10
+
+                            Rectangle {
+                                width: 8
+                                height: parent.height - 20
+                                radius: 4
+                                color: ganttChart.priorityColor(model.priority)
+                            }
+
+                            Column {
+                                width: parent.parent.width - 58
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: 3
+
+                                Row {
+                                    spacing: 6
+
+                                    Text {
+                                        text: model.title
+                                        width: Math.max(40, parent.parent.width - priorityBadge.width - 10)
+                                        font.pixelSize: 13
+                                        font.bold: true
+                                        color: "#0f172a"
+                                        elide: Text.ElideRight
+                                    }
+
+                                    Rectangle {
+                                        id: priorityBadge
+                                        height: 20
+                                        width: 30
+                                        radius: 10
+                                        color: ganttChart.priorityColor(model.priority)
+
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: ganttChart.priorityLabel(model.priority)
+                                            font.pixelSize: 10
+                                            font.bold: true
+                                            color: "#ffffff"
+                                        }
+                                    }
+                                }
+
+                                Text {
+                                    text: (model.categoryName || "未分类")
+                                    width: parent.width
+                                    font.pixelSize: 11
+                                    color: "#64748b"
+                                    elide: Text.ElideRight
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         Rectangle {
             id: ganttPanel

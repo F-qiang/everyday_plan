@@ -14,7 +14,7 @@ NotificationManager::NotificationManager(QObject *parent)
         return;
     }
 
-    m_trayIcon.setIcon(QIcon(QStringLiteral(":/qt/qml/everyday_day/assets/ep_app_icon.ico")));
+    m_trayIcon.setIcon(QIcon(QStringLiteral(":/qt/qml/everyday_plan/assets/ep_app_icon.ico")));
     m_trayIcon.setToolTip(QStringLiteral("Everyday Plan"));
 
     m_trayMenu = new QMenu();
@@ -61,7 +61,7 @@ void NotificationManager::showNotification(const QString &title, const QString &
         m_trayIcon.show();
     }
 
-    m_trayIcon.setIcon(QIcon(QStringLiteral(":/qt/qml/everyday_day/assets/ep_app_icon.ico")));
+    m_trayIcon.setIcon(QIcon(QStringLiteral(":/qt/qml/everyday_plan/assets/ep_app_icon.ico")));
     m_trayIcon.showMessage(title, message, QSystemTrayIcon::NoIcon, 6000);
 }
 

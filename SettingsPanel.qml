@@ -5,7 +5,7 @@ import QtQuick.Layouts 1.15
 Item {
     id: root
 
-    property bool homeDarkMode: true
+    property bool homeDarkMode: false
     property string uiLanguage: "zh"
     property string backgroundImageSource: ""
     property int navFontSize: 18

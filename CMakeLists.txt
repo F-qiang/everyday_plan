@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(everyday_day VERSION 0.2 LANGUAGES CXX)
+project(everyday_plan VERSION 0.2 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -11,14 +11,14 @@ find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Sql Network Widgets)
 qt_standard_project_setup(REQUIRES 6.5)
 
 # 生成可执行文件
-qt_add_executable(appeveryday_day
+qt_add_executable(appeveryday_plan
     main.cpp
     windows.rc
 )
 
 # 配置 QML 模块
-qt_add_qml_module(appeveryday_day
-    URI everyday_day
+qt_add_qml_module(appeveryday_plan
+    URI everyday_plan
     VERSION 1.0
 
     QML_FILES
@@ -68,7 +68,7 @@ qt_add_qml_module(appeveryday_day
 )
 
 # 设置目标程序属性
-set_target_properties(appeveryday_day PROPERTIES
+set_target_properties(appeveryday_plan PROPERTIES
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     MACOSX_BUNDLE TRUE
@@ -77,7 +77,7 @@ set_target_properties(appeveryday_day PROPERTIES
 )
 
 # 链接 Qt6 模块
-target_link_libraries(appeveryday_day
+target_link_libraries(appeveryday_plan
     PRIVATE Qt6::Quick
     PRIVATE Qt6::QuickControls2
     PRIVATE Qt6::Sql
@@ -86,7 +86,7 @@ target_link_libraries(appeveryday_day
 )
 
 include(GNUInstallDirs)
-install(TARGETS appeveryday_day
+install(TARGETS appeveryday_plan
     BUNDLE DESTINATION .
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

@@ -211,7 +211,7 @@ void DatabaseManager::ensureDefaultGuideTaskForUser(int userId)
 QVariantMap DatabaseManager::defaultUserSettings() const
 {
     return {
-        {"homeDarkMode", true},
+        {"homeDarkMode", false},
         {"backgroundImageSource", ""},
         {"navFontSize", 18},
         {"middleCardFontSize", 15},
@@ -560,7 +560,7 @@ QVariantList DatabaseManager::getTasksByUser(int userId, const QString &startDat
 QVariantList DatabaseManager::getTasksByDateRange(int userId, const QString &startDate, const QString &endDate)
 {
     QVariantList tasks; QSqlQuery query(m_db);
-    query.prepare("SELECT task_id, title, description, content, start_date, end_date, progress, priority, status, category_id FROM Tasks WHERE user_id = ? AND start_date <= ? AND (end_date >= ? OR end_date IS NULL) ORDER BY start_date ASC");
+    query.prepare("SELECT task_id, title, description, content, start_date, end_date, progress, priority, status, category_id FROM Tasks WHERE user_id = ? AND start_date <= ? AND (end_date >= ? OR end_date IS NULL) ORDER BY priority DESC, start_date ASC, created_at DESC, task_id DESC");
     query.addBindValue(userId); query.addBindValue(endDate); query.addBindValue(startDate);
     if (query.exec()) while (query.next()) {
         QVariantMap task; task["taskId"] = query.value(0).toInt(); task["title"] = query.value(1).toString(); task["description"] = query.value(2).toString(); task["content"] = query.value(3).toString(); task["startDate"] = query.value(4).toString(); task["endDate"] = query.value(5).toString(); task["progress"] = query.value(6).toInt(); task["priority"] = query.value(7).toInt(); task["status"] = query.value(8).toInt(); task["categoryId"] = query.value(9).toInt(); tasks.append(task);

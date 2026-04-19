@@ -21,7 +21,7 @@ Window {
         close.accepted = true
     }
     visible: true
-    color: "#000000"
+    color: pageBaseColor
      property int self_height: Screen.height
     property int self_width: Screen.width
     property string databasePath: "./data.db"
@@ -574,7 +574,7 @@ Window {
     property int detailFontSize: defaultUserSettings.detailFontSize
     property string uiLanguage: defaultUserSettings.uiLanguage
     property string timeDisplayFormat: defaultUserSettings.timeDisplayFormat
-    property var todaySortOptions: [
+    property var taskSortOptions: [
         { "label": t("优先级（高到低）", "Priority (High to Low)"), "field": "priority", "descending": true },
         { "label": t("优先级（低到高）", "Priority (Low to High)"), "field": "priority", "descending": false },
         { "label": t("创建日期（新到旧）", "Created (Newest First)"), "field": "createdAt", "descending": true },
@@ -585,8 +585,17 @@ Window {
         { "label": t("开始日期（旧到新）", "Start (Earliest First)"), "field": "startDate", "descending": false }
     ]
     property int todaySortIndex: 0
+    property int allTasksSortIndex: 2
+    property int completedSortIndex: 2
+    readonly property var todaySortOptions: taskSortOptions
+    readonly property var allTasksSortOptions: taskSortOptions
+    readonly property var completedSortOptions: taskSortOptions
     readonly property string todaySortField: todaySortOptions[todaySortIndex].field
     readonly property bool todaySortDescending: todaySortOptions[todaySortIndex].descending
+    readonly property string allTasksSortField: allTasksSortOptions[allTasksSortIndex].field
+    readonly property bool allTasksSortDescending: allTasksSortOptions[allTasksSortIndex].descending
+    readonly property string completedSortField: completedSortOptions[completedSortIndex].field
+    readonly property bool completedSortDescending: completedSortOptions[completedSortIndex].descending
     readonly property color pageBaseColor: homeDarkMode ? "#2f343c" : "#ffffff"
     readonly property color detailSurfaceColor: homeDarkMode ? "#323841" : "#f8fafc"
     readonly property color detailElevatedColor: homeDarkMode ? "#3b4350" : "#ffffff"
@@ -937,6 +946,56 @@ Window {
         onTriggered: sidebarBackupJustCompleted = false
     }
 
+    function currentSortOptions() {
+        if (currentPageType === pageCompleted) {
+            return completedSortOptions
+        }
+        if (currentPageType === pageAllTasks) {
+            return allTasksSortOptions
+        }
+        return todaySortOptions
+    }
+
+    function currentSortIndex() {
+        if (currentPageType === pageCompleted) {
+            return completedSortIndex
+        }
+        if (currentPageType === pageAllTasks) {
+            return allTasksSortIndex
+        }
+        return todaySortIndex
+    }
+
+    function setCurrentSortIndex(index) {
+        if (currentPageType === pageCompleted) {
+            completedSortIndex = index
+        } else if (currentPageType === pageAllTasks) {
+            allTasksSortIndex = index
+        } else {
+            todaySortIndex = index
+        }
+    }
+
+    function currentSortField() {
+        if (currentPageType === pageCompleted) {
+            return completedSortField
+        }
+        if (currentPageType === pageAllTasks) {
+            return allTasksSortField
+        }
+        return todaySortField
+    }
+
+    function currentSortDescending() {
+        if (currentPageType === pageCompleted) {
+            return completedSortDescending
+        }
+        if (currentPageType === pageAllTasks) {
+            return allTasksSortDescending
+        }
+        return todaySortDescending
+    }
+
     function categoryIndexById(categoryId) {
         if (categoryId <= 0) {
             return 0
@@ -956,7 +1015,7 @@ Window {
         clearCategoryFilter()
         resetDetail()
         loadCategories()
-        AbstractContentsModel.loadAllFromDatabase(databasePath, false, false, "priority", true)
+        AbstractContentsModel.loadAllFromDatabase(databasePath, AuthManager.currentUserId, false, false, allTasksSortField, allTasksSortDescending)
     }
 
     function showCompletedTasks() {
@@ -966,7 +1025,7 @@ Window {
         clearCategoryFilter()
         resetDetail()
         loadCategories()
-        AbstractContentsModel.loadAllFromDatabase(databasePath, false, true, "createdAt", true)
+        AbstractContentsModel.loadAllFromDatabase(databasePath, AuthManager.currentUserId, false, true, completedSortField, completedSortDescending)
     }
 
     function showGanttChart() {
@@ -986,7 +1045,7 @@ Window {
         clearCategoryFilter()
         resetDetail()
         loadCategories()
-        AbstractContentsModel.loadAllFromDatabase(databasePath, true, false, todaySortField, todaySortDescending)
+        AbstractContentsModel.loadAllFromDatabase(databasePath, AuthManager.currentUserId, true, false, todaySortField, todaySortDescending)
     }
 
     function showCategoryTasks(categoryId, categoryName) {
@@ -996,7 +1055,7 @@ Window {
         activeCategoryName = categoryName || ""
         resetDetail()
         loadCategories()
-        AbstractContentsModel.loadAllFromDatabase(databasePath, false, false, "priority", true)
+        AbstractContentsModel.loadAllFromDatabase(databasePath, AuthManager.currentUserId, false, false, allTasksSortField, allTasksSortDescending)
     }
 
     function showSettings() {
@@ -1038,7 +1097,7 @@ Window {
         middleCollapsed = false
         clearCategoryFilter()
         loadCategories()
-        AbstractContentsModel.loadAllFromDatabase(databasePath, false, false, "priority", true)
+        AbstractContentsModel.loadAllFromDatabase(databasePath, AuthManager.currentUserId, false, false, allTasksSortField, allTasksSortDescending)
 
         for (let i = 0; i < AbstractContentsModel.rowCount(); ++i) {
             const task = AbstractContentsModel.get(i)
@@ -1225,7 +1284,7 @@ Window {
             GanttModel.loadTasks()
         } else {
             loadCategories()
-            AbstractContentsModel.loadAllFromDatabase(databasePath, currentPageType === pageToday, currentPageType === pageCompleted, todaySortField, todaySortDescending)
+            AbstractContentsModel.loadAllFromDatabase(databasePath, AuthManager.currentUserId, currentPageType === pageToday, currentPageType === pageCompleted, currentSortField(), currentSortDescending())
         }
     }
 
@@ -1666,11 +1725,11 @@ Window {
             detailHintTextColor: mainWindow.detailHintTextColor
             searchKeyword: leftSidebar.searchText
             selectedCategoryId: mainWindow.activeCategoryId
-            showSortControl: currentPageType === pageToday
-            sortOptions: mainWindow.todaySortOptions
-            selectedSortIndex: mainWindow.todaySortIndex
+            showSortControl: currentPageType === pageToday || currentPageType === pageAllTasks || currentPageType === pageCompleted
+            sortOptions: mainWindow.currentSortOptions()
+            selectedSortIndex: mainWindow.currentSortIndex()
             onSortIndexChanged: function(index) {
-                mainWindow.todaySortIndex = index
+                mainWindow.setCurrentSortIndex(index)
                 mainWindow.refreshCurrentView()
             }
             onItemSelected: (taskId, title, outline, content, time, startDate, author, createdAt, dueDate, priority, categoryId, categoryName, categoryColor, completed) =>
@@ -1688,7 +1747,7 @@ Window {
 
             StackLayout {
                 anchors.fill: parent
-                currentIndex: contentArea.ganttMode ? 4 : (rightPanelMode === rightPanelSettings ? 1 : (rightPanelMode === rightPanelNewTask ? 2 : (rightPanelMode === rightPanelNewCategory ? 3 : 0)))
+                currentIndex: rightPanelMode === rightPanelSettings ? 1 : (contentArea.ganttMode ? 4 : (rightPanelMode === rightPanelNewTask ? 2 : (rightPanelMode === rightPanelNewCategory ? 3 : 0)))
                 Rectangle {
                     color: pageBaseColor
 
@@ -2004,12 +2063,18 @@ Window {
                     onChooseBackupDirectoryRequested: backupFolderDialog.open()
                     onBackupNowRequested: mainWindow.runBackupExport()
                     onRestoreBackupRequested: restoreBackupDialog.open()
+                    onLogoutRequested: {
+                        AuthManager.logout()
+                        mainWindow.resetDetail()
+                        mainWindow.openLoginWindow()
+                    }
                     onTestNotificationRequested: NotificationManager.showNotification("Everyday Plan", "这是一条测试通知，用来确认系统通知已接通。")
                     onDisplayNameEdited: function(value) {
                         if (AuthManager.isLoggedIn) {
-                            AuthManager.updateCurrentUserNickname(value)
+                            AuthManager.updateNickname(value)
                         }
                     }
+                    onUiLanguageChanged: mainWindow.refreshCurrentView()
                 }
 
                 NewTaskDialog {

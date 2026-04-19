@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
 {
     QQuickStyle::setStyle("Basic");
     QApplication app(argc, argv);
-    const QIcon appIcon(QStringLiteral(":/qt/qml/everyday_day/assets/ep_app_icon.ico"));
+    const QIcon appIcon(QStringLiteral(":/qt/qml/everyday_plan/assets/ep_app_icon.ico"));
     app.setWindowIcon(appIcon);
 
     // 初始化数据库
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty("GanttModel", ganttModel);
 
     // 加载 QML 文件
-    engine.loadFromModule("everyday_day", "Main");
+    engine.loadFromModule("everyday_plan", "Main");
 
     return app.exec();
 }

@@ -92,7 +92,7 @@ QVariantMap AbstractContentsModel::get(int row) const
     return task;
 }
 
-bool AbstractContentsModel::loadAllFromDatabase(const QString &dbPath, bool todayOnly, bool completedOnly, const QString &sortField, bool sortDescending)
+bool AbstractContentsModel::loadAllFromDatabase(const QString &dbPath, int userId, bool todayOnly, bool completedOnly, const QString &sortField, bool sortDescending)
 {
     beginResetModel();
     qDeleteAll(m_contentList);
@@ -131,19 +131,20 @@ bool AbstractContentsModel::loadAllFromDatabase(const QString &dbPath, bool toda
         FROM Tasks
         LEFT JOIN Users ON Users.user_id = Tasks.user_id
         LEFT JOIN Categories ON Categories.category_id = Tasks.category_id
+        WHERE Tasks.user_id = :userId
     )";
 
     if (todayOnly) {
-        sql += " WHERE (((Tasks.today_until IS NOT NULL AND Tasks.today_until != '' AND datetime(Tasks.today_until) > datetime('now', '+8 hours')) OR (Tasks.start_date IS NOT NULL AND Tasks.start_date != '' AND date(Tasks.start_date, '+8 hours') <= date('now', '+8 hours') AND (Tasks.end_date IS NULL OR Tasks.end_date = '' OR date(Tasks.end_date, '+8 hours') >= date('now', '+8 hours')))) AND NOT (Tasks.today_hidden_until IS NOT NULL AND Tasks.today_hidden_until != '' AND datetime(Tasks.today_hidden_until) > datetime('now', '+8 hours')))";
+        sql += " AND (((Tasks.today_until IS NOT NULL AND Tasks.today_until != '' AND datetime(Tasks.today_until) > datetime('now', '+8 hours')) OR (Tasks.start_date IS NOT NULL AND Tasks.start_date != '' AND date(Tasks.start_date, '+8 hours') <= date('now', '+8 hours') AND (Tasks.end_date IS NULL OR Tasks.end_date = '' OR date(Tasks.end_date, '+8 hours') >= date('now', '+8 hours')))) AND NOT (Tasks.today_hidden_until IS NOT NULL AND Tasks.today_hidden_until != '' AND datetime(Tasks.today_hidden_until) > datetime('now', '+8 hours')))";
         if (!completedOnly) {
             sql += " AND Tasks.status != 1";
         }
     } else if (!completedOnly) {
-        sql += " WHERE Tasks.status != 1";
+        sql += " AND Tasks.status != 1";
     }
 
     if (completedOnly) {
-        sql += todayOnly ? " AND Tasks.status = 1" : " WHERE Tasks.status = 1";
+        sql += " AND Tasks.status = 1";
     }
 
     QString orderColumn = "Tasks.priority";
@@ -157,7 +158,10 @@ bool AbstractContentsModel::loadAllFromDatabase(const QString &dbPath, bool toda
     const QString direction = sortDescending ? "DESC" : "ASC";
     sql += " ORDER BY " + orderColumn + " " + direction + ", Tasks.priority DESC, Tasks.created_at DESC, Tasks.task_id DESC";
 
-    if (!query.exec(sql)) {
+    query.prepare(sql);
+    query.bindValue(":userId", userId);
+
+    if (!query.exec()) {
         db.close();
         endResetModel();
         return false;

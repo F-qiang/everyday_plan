@@ -67,7 +67,7 @@ Window {
                 Image {
                     width: 80
                     height: 80
-                    source: "qrc:/qt/qml/everyday_day/assets/ep_app_icon.svg"
+                    source: "qrc:/qt/qml/everyday_plan/assets/ep_app_icon.svg"
                     fillMode: Image.PreserveAspectFit
                     smooth: true
                     sourceSize.width: 160
