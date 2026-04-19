@@ -49,7 +49,7 @@ Item {
 
         if (ok) {
             mainWindow.refreshCurrentView()
-            AbstractContentsModel.loadAllFromDatabase(mainWindow.databasePath, AuthManager.currentUserId, mainWindow.currentPageType === mainWindow.pageToday, mainWindow.currentPageType === mainWindow.pageCompleted)
+            AbstractContentsModel.loadAllFromDatabase(mainWindow.databasePath, AuthManager.currentUserId, mainWindow.currentPageType === mainWindow.pageToday, mainWindow.currentPageType === mainWindow.pageCompleted, mainWindow.currentSortField(), mainWindow.currentSortDescending())
             if (mainWindow.selectedTaskId === taskId) {
                 mainWindow.selectedTaskOutline = newOutline
                 mainWindow.selectedTaskContent = newOutline
@@ -70,7 +70,7 @@ Item {
         }
 
         mainWindow.refreshCurrentView()
-        AbstractContentsModel.loadAllFromDatabase(mainWindow.databasePath, mainWindow.currentPageType === mainWindow.pageToday, mainWindow.currentPageType === mainWindow.pageCompleted)
+        AbstractContentsModel.loadAllFromDatabase(mainWindow.databasePath, AuthManager.currentUserId, mainWindow.currentPageType === mainWindow.pageToday, mainWindow.currentPageType === mainWindow.pageCompleted, mainWindow.currentSortField(), mainWindow.currentSortDescending())
 
         if (selected && mainWindow.currentPageType !== mainWindow.pageToday) {
             openTaskById(taskId)
@@ -103,7 +103,7 @@ Item {
         }
 
         mainWindow.refreshCurrentView()
-        AbstractContentsModel.loadAllFromDatabase(mainWindow.databasePath, mainWindow.currentPageType === mainWindow.pageToday, mainWindow.currentPageType === mainWindow.pageCompleted)
+        AbstractContentsModel.loadAllFromDatabase(mainWindow.databasePath, AuthManager.currentUserId, mainWindow.currentPageType === mainWindow.pageToday, mainWindow.currentPageType === mainWindow.pageCompleted, mainWindow.currentSortField(), mainWindow.currentSortDescending())
 
         if (!completed) {
             openTaskById(taskId)
@@ -138,7 +138,7 @@ Item {
         }
 
         mainWindow.refreshCurrentView()
-        AbstractContentsModel.loadAllFromDatabase(mainWindow.databasePath, mainWindow.currentPageType === mainWindow.pageToday, mainWindow.currentPageType === mainWindow.pageCompleted)
+        AbstractContentsModel.loadAllFromDatabase(mainWindow.databasePath, AuthManager.currentUserId, mainWindow.currentPageType === mainWindow.pageToday, mainWindow.currentPageType === mainWindow.pageCompleted, mainWindow.currentSortField(), mainWindow.currentSortDescending())
 
         if (mainWindow.selectedTaskId === taskId) {
             mainWindow.selectedTaskCategoryId = categoryId
