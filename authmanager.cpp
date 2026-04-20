@@ -1,16 +1,16 @@
 #include "authmanager.h"
 #include "databasemanager.h"
-#include <QRandomGenerator>
-#include <QDebug>
-#include <QSettings>
-#include <QRegularExpression>
-#include <QTcpSocket>
-#include <QSslSocket>
-#include <QTextStream>
-#include <QByteArray>
 
-// 如果需要发送邮件，可以引入以下头文件
-// #include <QSmtpClient> 或使用第三方库
+#include <QDebug>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QRegularExpression>
+#include <QSettings>
+#include <QUrl>
+#include <QUrlQuery>
 
 AuthManager* AuthManager::m_instance = nullptr;
 
@@ -18,14 +18,14 @@ AuthManager::AuthManager(QObject *parent)
     : QObject(parent)
     , m_currentUserId(-1)
     , m_isLoggedIn(false)
+    , m_networkManager(new QNetworkAccessManager(this))
 {
-    // 尝试从本地存储恢复登录状态
     QSettings settings("EverydayPlan", "Auth");
     m_currentUserId = settings.value("currentUserId", -1).toInt();
-    
+    m_verificationApiBaseUrl = settings.value("verificationApiBaseUrl", "http://127.0.0.1:3000/api/auth").toString().trimmed();
+
     if (m_currentUserId > 0) {
-        // 验证用户是否仍然存在
-        QVariantMap userInfo = DatabaseManager::instance()->getUserInfo(m_currentUserId);
+        const QVariantMap userInfo = DatabaseManager::instance()->getUserInfo(m_currentUserId);
         if (!userInfo.isEmpty()) {
             m_currentEmail = userInfo["email"].toString();
             m_currentNickname = userInfo["nickname"].toString();
@@ -35,9 +35,7 @@ AuthManager::AuthManager(QObject *parent)
     }
 }
 
-AuthManager::~AuthManager()
-{
-}
+AuthManager::~AuthManager() = default;
 
 void AuthManager::setMailError(const QString &message)
 {
@@ -73,262 +71,204 @@ QString AuthManager::currentUserNickname() const
     return m_currentNickname;
 }
 
-QString AuthManager::generateVerificationCode()
+QString AuthManager::verificationApiBaseUrl() const
 {
-    // 生成6位数字验证码
-    QString code;
-    for (int i = 0; i < 6; ++i) {
-        code.append(QString::number(QRandomGenerator::global()->bounded(10)));
+    return m_verificationApiBaseUrl;
+}
+
+QString AuthManager::normalizedApiBaseUrl() const
+{
+    QString baseUrl = m_verificationApiBaseUrl.trimmed();
+    while (baseUrl.endsWith('/')) {
+        baseUrl.chop(1);
     }
-    return code;
+    return baseUrl;
+}
+
+QString AuthManager::buildEndpointUrl(const QString &path) const
+{
+    const QString baseUrl = normalizedApiBaseUrl();
+    if (baseUrl.isEmpty()) {
+        return QString();
+    }
+
+    QString normalizedPath = path.trimmed();
+    if (!normalizedPath.startsWith('/')) {
+        normalizedPath.prepend('/');
+    }
+
+    return baseUrl + normalizedPath;
+}
+
+QString AuthManager::extractReplyMessage(QNetworkReply *reply, const QJsonObject &json) const
+{
+    const QString jsonMessage = json.value("message").toString().trimmed();
+    if (!jsonMessage.isEmpty()) {
+        return jsonMessage;
+    }
+
+    const QString errorString = reply ? reply->errorString().trimmed() : QString();
+    if (!errorString.isEmpty()) {
+        return errorString;
+    }
+
+    return QStringLiteral("请求失败，请稍后重试");
+}
+
+void AuthManager::setVerificationApiBaseUrl(const QString &baseUrl)
+{
+    QString normalized = baseUrl.trimmed();
+    while (normalized.endsWith('/')) {
+        normalized.chop(1);
+    }
+
+    if (m_verificationApiBaseUrl == normalized) {
+        return;
+    }
+
+    m_verificationApiBaseUrl = normalized;
+    QSettings settings("EverydayPlan", "Auth");
+    settings.setValue("verificationApiBaseUrl", m_verificationApiBaseUrl);
+    settings.sync();
+    emit verificationApiBaseUrlChanged();
 }
 
 void AuthManager::requestVerificationCode(const QString &email)
 {
-    QRegularExpression emailRegex(R"(^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$)");
-    if (!emailRegex.match(email).hasMatch()) {
+    const QRegularExpression emailRegex(R"(^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$)");
+    const QString trimmedEmail = email.trimmed();
+    if (!emailRegex.match(trimmedEmail).hasMatch()) {
         emit verificationCodeSent(false, "邮箱格式不正确");
         return;
     }
 
     int remainingSeconds = 0;
-    if (!DatabaseManager::instance()->canRequestVerificationCode(email, 60, &remainingSeconds)) {
+    if (!DatabaseManager::instance()->canRequestVerificationCode(trimmedEmail, 60, &remainingSeconds)) {
         emit verificationCodeSent(false, QString("请求过于频繁，请 %1 秒后再试").arg(remainingSeconds));
         return;
     }
 
-    QString code = generateVerificationCode();
-
-    if (!DatabaseManager::instance()->saveVerificationCode(email, code)) {
-        emit verificationCodeSent(false, "验证码保存失败，请重试");
+    const QString endpoint = buildEndpointUrl("/send-code");
+    if (endpoint.isEmpty()) {
+        emit verificationCodeSent(false, "未配置验证码服务地址");
         return;
     }
 
-    QString subject = "Everyday Plan - 您的登录验证码";
-    QString body = QString(R"(
-        <html>
-        <body style="font-family: Arial, sans-serif;">
-            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                <h2 style="color: #3498db;">Everyday Plan</h2>
-                <p>您好！</p>
-                <p>您正在使用邮箱登录 Everyday Plan，您的验证码是：</p>
-                <div style="background-color: #f5f5f5; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
-                    %1
-                </div>
-                <p style="color: #666;">验证码有效期为 5 分钟，请尽快使用。</p>
-                <p style="color: #999; font-size: 12px;">如果您没有请求此验证码，请忽略此邮件。</p>
-            </div>
-        </body>
-        </html>
-    )").arg(code);
-
-    if (sendEmail(email, subject, body)) {
-        emit verificationCodeSent(true, "验证码已发送，请查收邮件");
-    } else {
-        emit verificationCodeSent(false, m_lastMailError.isEmpty() ? "验证码发送失败，请检查邮箱配置" : m_lastMailError);
-    }
-}
-
-bool AuthManager::sendSmtpCommand(QTcpSocket *socket, const QByteArray &command, const QList<int> &expectedCodes, QByteArray *response)
-{
-    if (!command.isEmpty()) {
-        if (socket->write(command) == -1 || !socket->waitForBytesWritten(5000)) {
-            setMailError(QString("SMTP 写入失败：%1").arg(socket->errorString()));
-            return false;
-        }
-    }
-
-    if (!socket->waitForReadyRead(5000)) {
-        setMailError(QString("SMTP 无响应：%1").arg(socket->errorString()));
-        return false;
-    }
-
-    QByteArray data;
-    do {
-        data += socket->readAll();
-    } while (socket->waitForReadyRead(150));
-
-    if (response) {
-        *response = data;
-    }
-
-    const QList<QByteArray> lines = data.split('\n');
-    int code = -1;
-    for (const QByteArray &rawLine : lines) {
-        const QByteArray line = rawLine.trimmed();
-        if (line.size() >= 3) {
-            bool ok = false;
-            const int parsed = line.left(3).toInt(&ok);
-            if (ok) {
-                code = parsed;
-            }
-        }
-    }
-
-    if (code < 0 || !expectedCodes.contains(code)) {
-        setMailError(QString("SMTP 返回异常：%1").arg(QString::fromUtf8(data).trimmed()));
-        return false;
-    }
-
-    return true;
-}
-
-bool AuthManager::sendSmtpCommand(QSslSocket *socket, const QByteArray &command, const QList<int> &expectedCodes, QByteArray *response)
-{
-    if (!command.isEmpty()) {
-        if (socket->write(command) == -1 || !socket->waitForBytesWritten(5000)) {
-            setMailError(QString("SMTPS 写入失败：%1").arg(socket->errorString()));
-            return false;
-        }
-    }
-
-    if (!socket->waitForReadyRead(5000)) {
-        setMailError(QString("SMTPS 无响应：%1").arg(socket->errorString()));
-        return false;
-    }
-
-    QByteArray data;
-    do {
-        data += socket->readAll();
-    } while (socket->waitForReadyRead(150));
-
-    if (response) {
-        *response = data;
-    }
-
-    const QList<QByteArray> lines = data.split('\n');
-    int code = -1;
-    for (const QByteArray &rawLine : lines) {
-        const QByteArray line = rawLine.trimmed();
-        if (line.size() >= 3) {
-            bool ok = false;
-            const int parsed = line.left(3).toInt(&ok);
-            if (ok) {
-                code = parsed;
-            }
-        }
-    }
-
-    if (code < 0 || !expectedCodes.contains(code)) {
-        setMailError(QString("SMTPS 返回异常：%1").arg(QString::fromUtf8(data).trimmed()));
-        return false;
-    }
-
-    return true;
-}
-
-bool AuthManager::sendEmail(const QString &to, const QString &subject, const QString &body)
-{
-    m_lastMailError.clear();
-
-    QSettings settings("EverydayPlan", "Mail");
-    const QString host = settings.value("smtpHost").toString();
-    const int port = settings.value("smtpPort", 465).toInt();
-    const QString username = settings.value("smtpUsername").toString();
-    const QString password = settings.value("smtpPassword").toString();
-    const QString from = settings.value("smtpFrom", username).toString();
-    const bool useSsl = settings.value("smtpUseSsl", true).toBool();
-
-    if (host.isEmpty() || username.isEmpty() || password.isEmpty() || from.isEmpty()) {
-        setMailError("缺少 SMTP 配置，请检查 smtpHost、smtpPort、smtpUsername、smtpPassword、smtpFrom");
-        return false;
-    }
-
-    const QByteArray authUser = username.toUtf8().toBase64();
-    const QByteArray authPass = password.toUtf8().toBase64();
-    const QByteArray message = QString(
-        "From: Everyday Plan <%1>\r\n"
-        "To: <%2>\r\n"
-        "Subject: %3\r\n"
-        "MIME-Version: 1.0\r\n"
-        "Content-Type: text/html; charset=UTF-8\r\n"
-        "Content-Transfer-Encoding: 8bit\r\n"
-        "\r\n"
-        "%4\r\n")
-        .arg(from, to, subject, body)
-        .toUtf8();
-
-    if (useSsl) {
-        QSslSocket socket;
-        socket.connectToHostEncrypted(host, quint16(port));
-        if (!socket.waitForEncrypted(10000)) {
-            setMailError(QString("SMTPS 连接失败：%1").arg(socket.errorString()));
-            return false;
-        }
-
-        if (!sendSmtpCommand(&socket, QByteArray(), {220})) return false;
-        if (!sendSmtpCommand(&socket, "EHLO localhost\r\n", {250})) return false;
-        if (!sendSmtpCommand(&socket, "AUTH LOGIN\r\n", {334})) return false;
-        if (!sendSmtpCommand(&socket, authUser + "\r\n", {334})) return false;
-        if (!sendSmtpCommand(&socket, authPass + "\r\n", {235})) return false;
-        if (!sendSmtpCommand(&socket, "MAIL FROM:<" + from.toUtf8() + ">\r\n", {250})) return false;
-        if (!sendSmtpCommand(&socket, "RCPT TO:<" + to.toUtf8() + ">\r\n", {250, 251})) return false;
-        if (!sendSmtpCommand(&socket, "DATA\r\n", {354})) return false;
-        if (!sendSmtpCommand(&socket, message + "\r\n.\r\n", {250})) return false;
-        sendSmtpCommand(&socket, "QUIT\r\n", {221});
-        return true;
-    }
-
-    QTcpSocket socket;
-    socket.connectToHost(host, quint16(port));
-    if (!socket.waitForConnected(10000)) {
-        setMailError(QString("SMTP 连接失败：%1").arg(socket.errorString()));
-        return false;
-    }
-
-    if (!sendSmtpCommand(&socket, QByteArray(), {220})) return false;
-    if (!sendSmtpCommand(&socket, "EHLO localhost\r\n", {250})) return false;
-    if (!sendSmtpCommand(&socket, "AUTH LOGIN\r\n", {334})) return false;
-    if (!sendSmtpCommand(&socket, authUser + "\r\n", {334})) return false;
-    if (!sendSmtpCommand(&socket, authPass + "\r\n", {235})) return false;
-    if (!sendSmtpCommand(&socket, "MAIL FROM:<" + from.toUtf8() + ">\r\n", {250})) return false;
-    if (!sendSmtpCommand(&socket, "RCPT TO:<" + to.toUtf8() + ">\r\n", {250, 251})) return false;
-    if (!sendSmtpCommand(&socket, "DATA\r\n", {354})) return false;
-    if (!sendSmtpCommand(&socket, message + "\r\n.\r\n", {250})) return false;
-    sendSmtpCommand(&socket, "QUIT\r\n", {221});
-    return true;
-}
-
-void AuthManager::loginWithCode(const QString &email, const QString &code)
-{
-    // 验证验证码
-    if (!DatabaseManager::instance()->verifyCode(email, code)) {
-        emit loginResult(false, "验证码错误或已过期");
+    QUrl url(endpoint);
+    if (!url.isValid()) {
+        emit verificationCodeSent(false, "验证码服务地址无效");
         return;
     }
-    
-    // 查找或创建用户
+
+    QNetworkRequest request(url);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    request.setRawHeader("Accept", "application/json");
+
+    QJsonObject payload;
+    payload.insert("email", trimmedEmail);
+
+    QNetworkReply *reply = m_networkManager->post(request, QJsonDocument(payload).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        const QByteArray raw = reply->readAll();
+        const QJsonDocument jsonDoc = QJsonDocument::fromJson(raw);
+        const QJsonObject json = jsonDoc.isObject() ? jsonDoc.object() : QJsonObject();
+        const bool success = reply->error() == QNetworkReply::NoError && reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() / 100 == 2;
+
+        if (success) {
+            emit verificationCodeSent(true, json.value("message").toString("验证码已发送，请查收邮件"));
+        } else {
+            const QString message = extractReplyMessage(reply, json);
+            setMailError(message);
+            emit verificationCodeSent(false, message);
+        }
+
+        reply->deleteLater();
+    });
+}
+
+void AuthManager::handleVerifiedLogin(const QString &email)
+{
     int userId = DatabaseManager::instance()->findUserByEmail(email);
     if (userId < 0) {
-        // 新用户，自动注册
         userId = DatabaseManager::instance()->createUser(email);
         if (userId < 0) {
             emit loginResult(false, "用户创建失败");
             return;
         }
     }
-    
-    // 获取用户信息
-    QVariantMap userInfo = DatabaseManager::instance()->getUserInfo(userId);
+
+    const QVariantMap userInfo = DatabaseManager::instance()->getUserInfo(userId);
     if (userInfo.isEmpty()) {
         emit loginResult(false, "获取用户信息失败");
         return;
     }
-    
-    // 设置登录状态
+
     m_currentUserId = userId;
     m_currentEmail = email;
     m_currentNickname = userInfo["nickname"].toString();
     m_isLoggedIn = true;
-    
-    // 保存登录状态到本地
+
     QSettings settings("EverydayPlan", "Auth");
     settings.setValue("currentUserId", m_currentUserId);
     settings.sync();
-    
+
     emit loginStateChanged();
     emit loginResult(true, "登录成功");
-    
+}
+
+void AuthManager::loginWithCode(const QString &email, const QString &code)
+{
+    const QString trimmedEmail = email.trimmed();
+    const QString trimmedCode = code.trimmed();
+
+    if (trimmedEmail.isEmpty() || trimmedCode.length() != 6) {
+        emit loginResult(false, "请输入正确的邮箱和 6 位验证码");
+        return;
+    }
+
+    const QString endpoint = buildEndpointUrl("/verify-code");
+    if (endpoint.isEmpty()) {
+        emit loginResult(false, "未配置验证码服务地址");
+        return;
+    }
+
+    QUrl url(endpoint);
+    if (!url.isValid()) {
+        emit loginResult(false, "验证码服务地址无效");
+        return;
+    }
+
+    QNetworkRequest request(url);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    request.setRawHeader("Accept", "application/json");
+
+    QJsonObject payload;
+    payload.insert("email", trimmedEmail);
+    payload.insert("code", trimmedCode);
+
+    QNetworkReply *reply = m_networkManager->post(request, QJsonDocument(payload).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply, trimmedEmail]() {
+        const QByteArray raw = reply->readAll();
+        const QJsonDocument jsonDoc = QJsonDocument::fromJson(raw);
+        const QJsonObject json = jsonDoc.isObject() ? jsonDoc.object() : QJsonObject();
+        const bool success = reply->error() == QNetworkReply::NoError && reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() / 100 == 2;
+
+        if (!success) {
+            emit loginResult(false, extractReplyMessage(reply, json));
+            reply->deleteLater();
+            return;
+        }
+
+        const bool verified = json.value("success").toBool(true);
+        if (!verified) {
+            emit loginResult(false, json.value("message").toString("验证码错误或已过期"));
+            reply->deleteLater();
+            return;
+        }
+
+        handleVerifiedLogin(trimmedEmail);
+        reply->deleteLater();
+    });
 }
 
 void AuthManager::logout()
@@ -337,14 +277,12 @@ void AuthManager::logout()
     m_currentEmail.clear();
     m_currentNickname.clear();
     m_isLoggedIn = false;
-    
-    // 清除本地存储的登录状态
+
     QSettings settings("EverydayPlan", "Auth");
     settings.remove("currentUserId");
     settings.sync();
-    
+
     emit loginStateChanged();
-    
     qDebug() << "用户已登出";
 }
 
@@ -380,7 +318,7 @@ void AuthManager::updateNickname(const QString &nickname)
     if (targetName == m_currentNickname) {
         return;
     }
-    
+
     if (DatabaseManager::instance()->updateUserInfo(m_currentUserId, targetName)) {
         m_currentNickname = targetName;
         emit loginStateChanged();

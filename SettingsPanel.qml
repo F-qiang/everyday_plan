@@ -21,12 +21,14 @@ Item {
     property string backupDirectory: "./backups"
     property string backupStatusText: ""
     property string currentUserName: ""
+    property string verificationApiBaseUrl: ""
     signal logoutRequested()
     signal chooseBackupDirectoryRequested()
     signal backupNowRequested()
     signal restoreBackupRequested()
     signal testNotificationRequested()
     signal displayNameEdited(string value)
+    signal verificationApiBaseUrlEdited(string value)
 
     readonly property color pageBackground: homeDarkMode ? "#2f343c" : "#ffffff"
     readonly property color panelBackground: homeDarkMode ? "#3a4049" : "#ffffff"
@@ -133,6 +135,57 @@ Item {
                             text: root.currentUserName
                             selectByMouse: true
                             onEditingFinished: root.displayNameEdited(text)
+
+                            background: Rectangle {
+                                radius: 12
+                                color: root.fieldBackground
+                                border.color: root.panelBorder
+                                border.width: 1
+                            }
+
+                            color: root.titleColor
+                            placeholderTextColor: root.subTitleColor
+                        }
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: verificationApiLayout.implicitHeight + 32
+                    radius: 18
+                    color: root.panelBackground
+                    border.color: root.panelBorder
+                    border.width: 1
+
+                    ColumnLayout {
+                        id: verificationApiLayout
+                        anchors.fill: parent
+                        anchors.margins: 18
+                        spacing: 12
+
+                        Label {
+                            text: root.t("验证码服务", "Verification Service")
+                            color: root.titleColor
+                            font.pixelSize: 18
+                            font.bold: true
+                        }
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: root.t("配置发送验证码的后端接口基础地址，例如 http://127.0.0.1:3000/api/auth。客户端会自动调用 /send-code 和 /verify-code。", "Configure the backend base URL for verification requests, for example http://127.0.0.1:3000/api/auth. The client will call /send-code and /verify-code automatically.")
+                            color: root.subTitleColor
+                            font.pixelSize: 12
+                            wrapMode: Text.WordWrap
+                        }
+
+                        TextField {
+                            id: verificationApiInput
+                            Layout.fillWidth: true
+                            implicitHeight: 42
+                            placeholderText: root.t("输入验证码服务基础地址", "Enter verification service base URL")
+                            text: root.verificationApiBaseUrl
+                            selectByMouse: true
+                            onEditingFinished: root.verificationApiBaseUrlEdited(text)
 
                             background: Rectangle {
                                 radius: 12

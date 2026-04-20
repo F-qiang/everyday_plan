@@ -2016,6 +2016,7 @@ Window {
                     backupDirectory: mainWindow.backupDirectory
                     backupStatusText: mainWindow.backupStatusText
                     currentUserName: AuthManager.currentUserNickname
+                    verificationApiBaseUrl: AuthManager.verificationApiBaseUrl
                     onBackgroundImageSourceChanged: {
                         mainWindow.backgroundImageSource = backgroundImageSource
                         mainWindow.persistUserSettings()
@@ -2073,6 +2074,9 @@ Window {
                         if (AuthManager.isLoggedIn) {
                             AuthManager.updateNickname(value)
                         }
+                    }
+                    onVerificationApiBaseUrlEdited: function(value) {
+                        AuthManager.setVerificationApiBaseUrl(value)
                     }
                     onUiLanguageChanged: mainWindow.refreshCurrentView()
                 }
