@@ -407,6 +407,7 @@ Window {
             editTaskTime = value
             editTaskReminderEnabled = true
         }
+        saveSelectedTaskEdits()
     }
 
     function currentDateTimeString(dateValue) {
@@ -800,7 +801,7 @@ Window {
     function ensureListPageForEditor() {
         if (currentPageType === pageGantt) {
             currentPageType = pageToday
-            AbstractContentsModel.loadAllFromDatabase(databasePath, true, false, todaySortField, todaySortDescending)
+            AbstractContentsModel.loadAllFromDatabase(databasePath, AuthManager.currentUserId, true, false, todaySortField, todaySortDescending)
         }
     }
 
@@ -809,7 +810,37 @@ Window {
         activeCategoryName = ""
     }
 
+    function hasSelectedTaskEdits() {
+        if (selectedTaskId < 0) {
+            return false
+        }
+
+        const title = editTaskTitle.trim()
+        const contentValue = editTaskContent.trim()
+        const outlineValue = editTaskOutline.trim()
+        const normalizedContent = contentValue === "" ? outlineValue : contentValue
+        const categoryId = editTaskCategoryIndex > 0 && categoryList.length >= editTaskCategoryIndex ? categoryList[editTaskCategoryIndex - 1].categoryId : 0
+        const reminderValue = editTaskReminderEnabled ? editTaskTime.trim() : ""
+
+        return title !== selectedTaskTitle
+                || outlineValue !== selectedTaskOutline
+                || normalizedContent !== selectedTaskContent
+                || editTaskStartDate.trim() !== selectedTaskStartDate
+                || editTaskDueDate.trim() !== selectedTaskDueDate
+                || reminderValue !== selectedTaskTime
+                || editTaskPriority !== selectedTaskPriority
+                || categoryId !== selectedTaskCategoryId
+                || editTaskCompleted !== selectedTaskCompleted
+    }
+
+    function saveCurrentDetailIfDirty() {
+        if (hasSelectedTaskEdits()) {
+            saveSelectedTaskEdits(false)
+        }
+    }
+
     function resetDetail() {
+        saveCurrentDetailIfDirty()
         setRightPanelMode(rightPanelNone)
         selectedTaskId = -1
         selectedTaskTitle = ""
@@ -1151,12 +1182,16 @@ Window {
     }
 
     function openTaskDetail(taskId, title, outline, content, time, startDate, author, createdAt, dueDate, priority, categoryId, categoryName, categoryColor, completed) {
+        if (selectedTaskId !== taskId) {
+            saveCurrentDetailIfDirty()
+        }
+
         setRightPanelMode(rightPanelDetail)
         selectedTaskId = taskId
         selectedTaskTitle = title
-        selectedTaskOutline = outline
-        selectedTaskContent = content || outline
-        selectedTaskTime = time
+        selectedTaskOutline = outline || ""
+        selectedTaskContent = content || outline || ""
+        selectedTaskTime = time || ""
         selectedTaskStartDate = startDate || ""
         selectedTaskAuthor = author || "未知作者"
         selectedTaskCreatedAt = createdAt || time
@@ -1187,13 +1222,19 @@ Window {
             return
         }
 
-        if (DatabaseManager.deleteTask(selectedTaskId)) {
+        const deletedTaskId = selectedTaskId
+        if (DatabaseManager.deleteTask(deletedTaskId)) {
+            selectedTaskId = -1
             refreshCurrentView()
             resetDetail()
         }
     }
 
-    function saveSelectedTaskEdits() {
+    function saveSelectedTaskEdits(shouldRefresh) {
+        if (shouldRefresh === undefined) {
+            shouldRefresh = true
+        }
+
         if (selectedTaskId < 0) {
             return
         }
@@ -1276,7 +1317,35 @@ Window {
             return
         }
 
-        refreshCurrentView()
+        if (shouldRefresh) {
+            refreshCurrentView()
+            reopenSelectedTaskFromModel(targetTaskId)
+        }
+    }
+
+    function reopenSelectedTaskFromModel(taskId) {
+        for (let i = 0; i < AbstractContentsModel.rowCount(); ++i) {
+            const task = AbstractContentsModel.get(i)
+            if (task.index_num === taskId) {
+                openTaskDetail(
+                    task.index_num,
+                    task.title,
+                    task.outline,
+                    task.content,
+                    task.time,
+                    task.startDate,
+                    task.author,
+                    task.created_at,
+                    task.dueDate,
+                    task.priority,
+                    task.categoryId,
+                    task.categoryName,
+                    task.categoryColor,
+                    task.completed
+                )
+                break
+            }
+        }
     }
 
     function refreshCurrentView() {
@@ -1900,7 +1969,15 @@ Window {
                                             onTitleEdited: function(value) { mainWindow.editTaskTitle = value }
                                             onTitleEditFinished: mainWindow.saveSelectedTaskEdits()
                                             onReminderEdited: function(value) { mainWindow.editTaskTime = value; mainWindow.saveSelectedTaskEdits() }
-                                            onReminderEnabledEdited: function(value) { mainWindow.editTaskReminderEnabled = value; mainWindow.saveSelectedTaskEdits() }
+                                            onReminderEnabledEdited: function(value) {
+                                                mainWindow.editTaskReminderEnabled = value
+                                                if (value) {
+                                                    mainWindow.openDateTimeEditor("reminder")
+                                                } else {
+                                                    mainWindow.editTaskTime = ""
+                                                    mainWindow.saveSelectedTaskEdits()
+                                                }
+                                            }
                                             onStartDateEdited: function(value) { mainWindow.editTaskStartDate = value; mainWindow.saveSelectedTaskEdits() }
                                             onDueDateEdited: function(value) { mainWindow.editTaskDueDate = value; mainWindow.saveSelectedTaskEdits() }
                                             onPriorityEdited: function(value) { mainWindow.editTaskPriority = value; mainWindow.saveSelectedTaskEdits() }
@@ -1977,7 +2054,15 @@ Window {
                                             onTitleEdited: function(value) { mainWindow.editTaskTitle = value }
                                             onTitleEditFinished: mainWindow.saveSelectedTaskEdits()
                                             onReminderEdited: function(value) { mainWindow.editTaskTime = value; mainWindow.saveSelectedTaskEdits() }
-                                            onReminderEnabledEdited: function(value) { mainWindow.editTaskReminderEnabled = value; mainWindow.saveSelectedTaskEdits() }
+                                            onReminderEnabledEdited: function(value) {
+                                                mainWindow.editTaskReminderEnabled = value
+                                                if (value) {
+                                                    mainWindow.openDateTimeEditor("reminder")
+                                                } else {
+                                                    mainWindow.editTaskTime = ""
+                                                    mainWindow.saveSelectedTaskEdits()
+                                                }
+                                            }
                                             onStartDateEdited: function(value) { mainWindow.editTaskStartDate = value; mainWindow.saveSelectedTaskEdits() }
                                             onDueDateEdited: function(value) { mainWindow.editTaskDueDate = value; mainWindow.saveSelectedTaskEdits() }
                                             onPriorityEdited: function(value) { mainWindow.editTaskPriority = value; mainWindow.saveSelectedTaskEdits() }

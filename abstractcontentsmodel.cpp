@@ -127,7 +127,7 @@ bool AbstractContentsModel::loadAllFromDatabase(const QString &dbPath, int userI
                COALESCE(Categories.name, '未分类') AS category_name,
                COALESCE(Categories.color, '#94a3b8') AS category_color,
                CASE WHEN Tasks.status = 1 THEN 1 ELSE 0 END AS completed_flag,
-               CASE WHEN (((Tasks.today_until IS NOT NULL AND Tasks.today_until != '' AND datetime(Tasks.today_until) > datetime('now', '+8 hours')) OR (Tasks.start_date IS NOT NULL AND Tasks.start_date != '' AND date(Tasks.start_date, '+8 hours') <= date('now', '+8 hours') AND (Tasks.end_date IS NULL OR Tasks.end_date = '' OR date(Tasks.end_date, '+8 hours') >= date('now', '+8 hours')))) AND NOT (Tasks.today_hidden_until IS NOT NULL AND Tasks.today_hidden_until != '' AND datetime(Tasks.today_hidden_until) > datetime('now', '+8 hours'))) THEN 1 ELSE 0 END AS today_selected_flag
+               CASE WHEN (((Tasks.today_until IS NOT NULL AND Tasks.today_until != '' AND datetime(Tasks.today_until, '+8 hours') > datetime('now', '+8 hours')) OR (Tasks.start_date IS NOT NULL AND Tasks.start_date != '' AND date(Tasks.start_date) <= date('now', '+8 hours') AND (Tasks.end_date IS NULL OR Tasks.end_date = '' OR date(Tasks.end_date) >= date('now', '+8 hours')))) AND NOT (Tasks.today_hidden_until IS NOT NULL AND Tasks.today_hidden_until != '' AND datetime(Tasks.today_hidden_until, '+8 hours') > datetime('now', '+8 hours'))) THEN 1 ELSE 0 END AS today_selected_flag
         FROM Tasks
         LEFT JOIN Users ON Users.user_id = Tasks.user_id
         LEFT JOIN Categories ON Categories.category_id = Tasks.category_id
@@ -135,7 +135,7 @@ bool AbstractContentsModel::loadAllFromDatabase(const QString &dbPath, int userI
     )";
 
     if (todayOnly) {
-        sql += " AND (((Tasks.today_until IS NOT NULL AND Tasks.today_until != '' AND datetime(Tasks.today_until) > datetime('now', '+8 hours')) OR (Tasks.start_date IS NOT NULL AND Tasks.start_date != '' AND date(Tasks.start_date, '+8 hours') <= date('now', '+8 hours') AND (Tasks.end_date IS NULL OR Tasks.end_date = '' OR date(Tasks.end_date, '+8 hours') >= date('now', '+8 hours')))) AND NOT (Tasks.today_hidden_until IS NOT NULL AND Tasks.today_hidden_until != '' AND datetime(Tasks.today_hidden_until) > datetime('now', '+8 hours')))";
+        sql += " AND (((Tasks.today_until IS NOT NULL AND Tasks.today_until != '' AND datetime(Tasks.today_until, '+8 hours') > datetime('now', '+8 hours')) OR (Tasks.start_date IS NOT NULL AND Tasks.start_date != '' AND date(Tasks.start_date) <= date('now', '+8 hours') AND (Tasks.end_date IS NULL OR Tasks.end_date = '' OR date(Tasks.end_date) >= date('now', '+8 hours')))) AND NOT (Tasks.today_hidden_until IS NOT NULL AND Tasks.today_hidden_until != '' AND datetime(Tasks.today_hidden_until, '+8 hours') > datetime('now', '+8 hours')))";
         if (!completedOnly) {
             sql += " AND Tasks.status != 1";
         }
@@ -228,8 +228,9 @@ void AbstractContentsModel::updateOutline(int row, const QString &newOutline, co
     if (!db.open()) return;
 
     QSqlQuery query(db);
-    query.prepare("UPDATE Tasks SET description = :description, updated_at = CURRENT_TIMESTAMP WHERE task_id = :id");
+    query.prepare("UPDATE Tasks SET description = :description, content = :content, updated_at = CURRENT_TIMESTAMP WHERE task_id = :id");
     query.bindValue(":description", newOutline);
+    query.bindValue(":content", newOutline);
     query.bindValue(":id", item->index_num());
     query.exec();
 }

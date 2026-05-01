@@ -357,52 +357,67 @@ Item {
                 }
 
 
-                Button {
+                Rectangle {
                     visible: mainWindow.currentPageType !== mainWindow.pageCompleted
-                    text: completed ? "已完成" : "完成"
+                    Layout.alignment: Qt.AlignVCenter
                     implicitHeight: 24
                     implicitWidth: 58
-                    onClicked: completedToggled(!completed)
+                    radius: 12
+                    color: statusArea.pressed ? Qt.darker(statusBackground, 1.08) : statusBackground
+                    border.color: statusBorder
+                    border.width: 1
 
-                    background: Rectangle {
-                        radius: 12
-                        color: statusBackground
-                        border.color: statusBorder
-                        border.width: 1
-                    }
-
-                    contentItem: Text {
-                        text: parent.text
+                    Text {
+                        anchors.centerIn: parent
+                        text: completed ? "已完成" : "完成"
                         color: statusTextColor
                         font.pixelSize: 11
                         font.bold: true
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                     }
+
+                    MouseArea {
+                        id: statusArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        acceptedButtons: Qt.LeftButton
+                        preventStealing: true
+                        onClicked: completedToggled(!completed)
+                    }
                 }
 
-                Button {
-                    text: "今日"
+                Rectangle {
+                    Layout.alignment: Qt.AlignVCenter
                     implicitHeight: 24
                     implicitWidth: 54
+                    radius: 12
                     enabled: !completed
                     opacity: completed ? 0.6 : 1
-                    onClicked: if (!completed) markTodayRequested(!todaySelected)
+                    color: todayArea.pressed && !completed ? Qt.darker(todayButtonBackground, 1.08) : todayButtonBackground
+                    border.color: todayButtonBorder
+                    border.width: 1
 
-                    background: Rectangle {
-                        radius: 12
-                        color: todayButtonBackground
-                        border.color: todayButtonBorder
-                        border.width: 1
-                    }
-
-                    contentItem: Text {
-                        text: parent.text
+                    Text {
+                        anchors.centerIn: parent
+                        text: "今日"
                         color: todayButtonText
                         font.pixelSize: 11
                         font.bold: todaySelected
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
+                    }
+
+                    MouseArea {
+                        id: todayArea
+                        anchors.fill: parent
+                        enabled: !completed
+                        hoverEnabled: true
+                        cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        acceptedButtons: Qt.LeftButton
+                        preventStealing: true
+                        onClicked: markTodayRequested(!todaySelected)
                     }
                 }
 

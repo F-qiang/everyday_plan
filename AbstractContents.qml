@@ -4,6 +4,7 @@ import QtQuick.Layouts 1.15
 
 import AbstractContentsModel 1.0
 import DatabaseManager 1.0
+import AuthManager 1.0
 
 Item {
     id: root
@@ -44,7 +45,8 @@ Item {
         }
 
         const ok = DatabaseManager.updateTask(taskId, {
-            "description": newOutline
+            "description": newOutline,
+            "content": newOutline
         })
 
         if (ok) {
@@ -62,6 +64,10 @@ Item {
     function markTaskForToday(taskId, selected) {
         if (taskId < 0) {
             return
+        }
+
+        if (mainWindow.selectedTaskId === taskId) {
+            mainWindow.saveCurrentDetailIfDirty()
         }
 
         const ok = selected ? DatabaseManager.markTaskForToday(taskId) : DatabaseManager.clearTaskFromToday(taskId)

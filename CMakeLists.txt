@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(everyday_plan VERSION 0.2 LANGUAGES CXX)
 
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 查找 Qt6 必需模块

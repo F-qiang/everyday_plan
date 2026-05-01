@@ -201,7 +201,6 @@ ColumnLayout {
                     implicitWidth: 56
                     implicitHeight: 34
                     Layout.alignment: Qt.AlignVCenter
-                    enabled: root.editTaskReminderEnabled
                     onClicked: root.openDateTimeEditorFunc("reminder")
                 }
 

@@ -22,6 +22,7 @@ ColumnLayout {
     property var contentIsFileFunc
     property var selectedFileNameFunc
     property int pendingFocusIndex: -1
+    property bool outlineEditorReady: false
     signal outlineEdited(string value)
     signal editingFinished()
     signal contentEdited(string value)
@@ -252,6 +253,13 @@ ColumnLayout {
     visible: visibleSection
     Layout.fillWidth: true
     spacing: 4
+
+    Timer {
+        id: outlineAutoSaveTimer
+        interval: 450
+        repeat: false
+        onTriggered: root.editingFinished()
+    }
 
     Timer {
         id: attachmentMenuHideTimer
@@ -586,13 +594,21 @@ ColumnLayout {
                 }
             }
             TextArea {
+                id: outlineInput
                 Layout.fillWidth: true
                 Layout.preferredHeight: Math.max(64, Math.min(contentHeight + topPadding + bottomPadding, 140))
                 wrapMode: TextEdit.Wrap
                 text: root.editTaskOutline
-                onTextChanged: root.outlineEdited(text)
+                onTextChanged: {
+                    root.outlineEdited(text)
+                    if (root.outlineEditorReady && activeFocus) {
+                        outlineAutoSaveTimer.restart()
+                    }
+                }
+                Component.onCompleted: root.outlineEditorReady = true
                 onActiveFocusChanged: {
-                    if (!activeFocus) {
+                    if (!activeFocus && root.outlineEditorReady) {
+                        outlineAutoSaveTimer.stop()
                         root.editingFinished()
                     }
                 }
